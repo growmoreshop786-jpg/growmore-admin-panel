@@ -6,7 +6,7 @@
   <title>GrowMore Store - Web Admin Panel</title>
   <!-- Supabase JS Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Tailwind CSS Styling -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -28,10 +28,10 @@
       </button>
     </aside>
 
-    <!-- Main Body Content -->
+    <!-- Main Content -->
     <main class="flex-1 p-8">
       
-      <!-- ==================== 1. PRODUCTS TAB ==================== -->
+      <!-- Products Section -->
       <section id="section-products">
         <div class="flex justify-between items-center mb-6">
           <div>
@@ -43,7 +43,6 @@
           </button>
         </div>
 
-        <!-- Products Table -->
         <div class="bg-white rounded-xl shadow overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead class="bg-purple-50 border-b border-purple-100">
@@ -62,11 +61,10 @@
         </div>
       </section>
 
-      <!-- ==================== 2. LIVE ORDERS TAB ==================== -->
+      <!-- Orders Section -->
       <section id="section-orders" class="hidden">
         <h2 class="text-2xl font-bold text-purple-950 mb-2">Customer Live Orders</h2>
         <p class="text-gray-500 text-sm mb-6">Realtime updates when customers order from the mobile app.</p>
-        
         <div id="orders-list" class="space-y-4">
           <p class="text-gray-500">Loading orders...</p>
         </div>
@@ -75,7 +73,7 @@
     </main>
   </div>
 
-  <!-- Add / Edit Product Modal -->
+  <!-- Add/Edit Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl relative">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
@@ -83,7 +81,6 @@
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
 
-        <!-- Image Upload Box -->
         <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('product-image').click()">
           <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewImage(event)">
           <img id="image-preview" class="h-28 mx-auto hidden object-contain mb-2">
@@ -134,28 +131,26 @@
     </div>
   </div>
 
-  <!-- JavaScript Logic -->
   <script>
-    // Supabase Configuration
+    // Supabase Credentials
     const SUPABASE_URL = 'https://kynzggetoskcafgxjlgi.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_R-obr5pUe_3_Lq9-7-LoRg_f6vMv8Sl';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Single Declaration Only
+    const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let selectedFile = null;
     let currentImageUrl = '';
 
-    // Initialize Dashboard
     window.onload = () => {
       loadProducts();
       loadOrders();
       
-      // Realtime Listener for Orders
-      supabase.channel('public:orders')
+      dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
         .subscribe();
     };
 
-    // Tab Switcher
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
@@ -164,12 +159,11 @@
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
     }
 
-    // Load Products List
     async function loadProducts() {
-      const { data, error } = await supabase.from('products').select('*').order('id', { ascending: false });
+      const { data, error } = await dbClient.from('products').select('*').order('id', { ascending: false });
       const container = document.getElementById('products-list');
 
-      if (error || !data.length) {
+      if (error || !data || !data.length) {
         container.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No products found. Click "+ Add New Product" to create one.</td></tr>`;
         return;
       }
@@ -190,12 +184,11 @@
       `).join('');
     }
 
-    // Load Live Orders
     async function loadOrders() {
-      const { data, error } = await supabase.from('orders').select('*').order('id', { ascending: false });
+      const { data, error } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       const container = document.getElementById('orders-list');
 
-      if (error || !data.length) {
+      if (error || !data || !data.length) {
         container.innerHTML = `<p class="text-gray-400 text-center py-8">No customer orders received yet.</p>`;
         return;
       }
@@ -220,7 +213,6 @@
       }).join('');
     }
 
-    // Modal Controls
     function openModal() {
       document.getElementById('product-form').reset();
       document.getElementById('product-id').value = '';
@@ -249,7 +241,6 @@
       }
     }
 
-    // Save or Edit Product
     async function saveProduct(e) {
       e.preventDefault();
       const saveBtn = document.getElementById('save-btn');
@@ -257,38 +248,57 @@
       saveBtn.disabled = true;
 
       const id = document.getElementById('product-id').value;
-      let imageUrl = currentImageUrl;
+      let imageUrl = currentImageUrl || '';
 
-      // Upload Photo to Supabase Storage Bucket
-      if (selectedFile) {
-        const filePath = `public/${Date.now()}_${selectedFile.name}`;
-        const { data, error } = await supabase.storage.from('product-images').upload(filePath, selectedFile);
-        if (!error) {
-          const { data: publicUrlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
-          imageUrl = publicUrlData.publicUrl;
+      try {
+        if (selectedFile) {
+          const fileName = `${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+          const filePath = `public/${fileName}`;
+
+          const { error: uploadError } = await dbClient.storage
+            .from('product-images')
+            .upload(filePath, selectedFile);
+
+          if (!uploadError) {
+            const { data: publicUrlData } = dbClient.storage
+              .from('product-images')
+              .getPublicUrl(filePath);
+            imageUrl = publicUrlData.publicUrl;
+          }
         }
+
+        const payload = {
+          title: document.getElementById('title').value.trim(),
+          price: parseFloat(document.getElementById('price').value),
+          category: document.getElementById('category').value,
+          model: document.getElementById('model').value.trim(),
+          color: document.getElementById('color').value.trim(),
+          description: document.getElementById('description').value.trim(),
+          image_url: imageUrl
+        };
+
+        let dbError = null;
+        if (id) {
+          const { error } = await dbClient.from('products').update(payload).eq('id', id);
+          dbError = error;
+        } else {
+          const { error } = await dbClient.from('products').insert([payload]);
+          dbError = error;
+        }
+
+        if (dbError) {
+          alert('Database Error: ' + dbError.message);
+        } else {
+          alert('Product saved successfully!');
+          closeModal();
+          loadProducts();
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        saveBtn.innerText = 'Save Product';
+        saveBtn.disabled = false;
       }
-
-      const payload = {
-        title: document.getElementById('title').value,
-        price: parseFloat(document.getElementById('price').value),
-        category: document.getElementById('category').value,
-        model: document.getElementById('model').value,
-        color: document.getElementById('color').value,
-        description: document.getElementById('description').value,
-        image_url: imageUrl,
-      };
-
-      if (id) {
-        await supabase.from('products').update(payload).eq('id', id);
-      } else {
-        await supabase.from('products').insert([payload]);
-      }
-
-      saveBtn.innerText = 'Save Product';
-      saveBtn.disabled = false;
-      closeModal();
-      loadProducts();
     }
 
     function editProduct(p) {
@@ -312,14 +322,14 @@
 
     async function deleteProduct(id) {
       if (confirm('Are you sure you want to delete this product?')) {
-        await supabase.from('products').delete().eq('id', id);
+        await dbClient.from('products').delete().eq('id', id);
         loadProducts();
       }
     }
 
     async function toggleOrderStatus(id, currentStatus) {
       const nextStatus = currentStatus === 'Pending' ? 'Completed' : 'Pending';
-      await supabase.from('orders').update({ status: nextStatus }).eq('id', id);
+      await dbClient.from('orders').update({ status: nextStatus }).eq('id', id);
       loadOrders();
     }
   </script>
