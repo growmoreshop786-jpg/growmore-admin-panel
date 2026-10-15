@@ -75,7 +75,7 @@
 
   <!-- Add/Edit Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl relative">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl relative max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
@@ -171,7 +171,7 @@
       container.innerHTML = data.map(p => `
         <tr class="border-b hover:bg-gray-50 text-sm">
           <td class="p-4">
-            <img src="${p.image_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded object-contain bg-gray-100">
+            <img src="${p.image_url || 'https://via.placeholder.com/40'}" class="w-12 h-12 rounded object-contain bg-gray-100 border">
           </td>
           <td class="p-4 font-semibold text-gray-800">${p.title}</td>
           <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">${p.category}</span></td>
@@ -252,17 +252,24 @@
 
       try {
         if (selectedFile) {
-          const fileName = `${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-          const filePath = `public/${fileName}`;
+          const fileExt = selectedFile.name.split('.').pop();
+          const fileName = `${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await dbClient.storage
             .from('product-images')
-            .upload(filePath, selectedFile);
+            .upload(fileName, selectedFile, {
+              cacheControl: '3600',
+              upsert: true
+            });
 
-          if (!uploadError) {
+          if (uploadError) {
+            console.error('Storage Upload Error:', uploadError);
+            alert('Image Upload Failed: ' + uploadError.message);
+          } else {
             const { data: publicUrlData } = dbClient.storage
               .from('product-images')
-              .getPublicUrl(filePath);
+              .getPublicUrl(fileName);
+            
             imageUrl = publicUrlData.publicUrl;
           }
         }
@@ -289,7 +296,7 @@
         if (dbError) {
           alert('Database Error: ' + dbError.message);
         } else {
-          alert('Product saved successfully!');
+          alert('Product saved successfully with image!');
           closeModal();
           loadProducts();
         }
