@@ -83,7 +83,7 @@
 
         <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('product-image').click()">
           <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewImage(event)">
-          <img id="image-preview" class="h-28 mx-auto hidden object-contain mb-2">
+          <img id="image-preview" class="h-40 mx-auto hidden object-contain mb-2 rounded-lg">
           <p id="upload-placeholder" class="text-xs text-gray-500">📷 Click here to select image from computer/mobile</p>
         </div>
 
@@ -94,8 +94,8 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-gray-600">Price ($)</label>
-            <input type="number" id="price" step="0.01" required class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
+            <label class="text-xs font-semibold text-gray-600">Price (PKR)</label>
+            <input type="number" id="price" step="1" required class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Category</label>
@@ -171,11 +171,11 @@
       container.innerHTML = data.map(p => `
         <tr class="border-b hover:bg-gray-50 text-sm">
           <td class="p-4">
-            <img src="${p.image_url || 'https://via.placeholder.com/40'}" class="w-12 h-12 rounded object-contain bg-gray-100 border">
+            <img src="${p.image_url || 'https://via.placeholder.com/80'}" class="w-20 h-20 rounded-lg object-contain bg-gray-100 border p-1">
           </td>
           <td class="p-4 font-semibold text-gray-800">${p.title}</td>
           <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">${p.category}</span></td>
-          <td class="p-4 font-bold text-gray-900">$${p.price}</td>
+          <td class="p-4 font-bold text-gray-900">PKR ${p.price}</td>
           <td class="p-4 space-x-2">
             <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 font-semibold hover:underline">Edit</button>
             <button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button>
@@ -203,7 +203,7 @@
                 <span class="text-xs px-2.5 py-0.5 rounded-full ${isPending ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}">${o.status}</span>
               </div>
               <p class="text-xs text-gray-500 mt-1">📞 ${o.customer_phone} | 📍 ${o.address}</p>
-              <p class="text-sm font-bold text-purple-900 mt-2">Total: $${o.total_amount}</p>
+              <p class="text-sm font-bold text-purple-900 mt-2">Total: PKR ${o.total_amount}</p>
             </div>
             <button onclick="toggleOrderStatus(${o.id}, '${o.status}')" class="px-4 py-2 rounded-lg text-xs font-bold text-white ${isPending ? 'bg-purple-950 hover:bg-purple-800' : 'bg-gray-400'}">
               ${isPending ? 'Mark Completed' : 'Completed'}
