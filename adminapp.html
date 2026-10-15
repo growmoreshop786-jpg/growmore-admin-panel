@@ -56,7 +56,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Select Picture from Laptop <span id="imgNote" class="text-[10px] text-slate-400">(Choose File)</span></label>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Select Picture from Laptop <span class="text-[10px] text-slate-400">(Choose File)</span></label>
                         <input type="file" id="imageFile" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-300 rounded-lg cursor-pointer bg-white">
                     </div>
                     <div>
@@ -104,9 +104,8 @@
         </div>
     </main>
 
-    <!-- Supabase Integration Script -->
+    <!-- Supabase & Upload Script -->
     <script>
-        // Yahan apni Supabase Credentials dalein
         const SUPABASE_URL = 'https://kynzggetoskcafgxjlgi.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_R-obr5pUe_3_Lq9-7-LoRg_f6vMv8Sl';
 
@@ -180,7 +179,7 @@
             });
         }
 
-        // Add or Update Product
+        // Add or Update Product with File Upload
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.disabled = true;
@@ -207,14 +206,14 @@
 
                     imageUrl = await uploadRes.text();
                 } else if (!editingId && !imageUrl) {
-                    throw new Error('Barah-e-karam product ki tasweer select karein!');
+                    throw new Error('Barah-e-karam laptop se product ki tasweer select karein!');
                 }
 
                 const productData = {
                     name: document.getElementById('name').value,
                     price: document.getElementById('price').value,
                     category: document.getElementById('category').value,
-                    image: imageUrl,
+                    image: imageUrl.trim(),
                     description: document.getElementById('description').value,
                 };
 
@@ -287,7 +286,7 @@
             }
         };
 
-        // Real-time listener using Supabase Realtime
+        // Real-time listener
         _supabase
             .channel('public:products')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
@@ -295,7 +294,6 @@
             })
             .subscribe();
 
-        // Initial fetch on page load
         fetchProducts();
     </script>
 </body>
