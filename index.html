@@ -53,7 +53,7 @@
                 <th class="p-4 text-xs font-bold text-purple-900 uppercase">Photo</th>
                 <th class="p-4 text-xs font-bold text-purple-900 uppercase">Title & Model</th>
                 <th class="p-4 text-xs font-bold text-purple-900 uppercase">Collection</th>
-                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Price (Now / Old)</th>
+                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Price & Rating</th>
                 <th class="p-4 text-xs font-bold text-purple-900 uppercase">Actions</th>
               </tr>
             </thead>
@@ -120,25 +120,30 @@
             <input type="number" id="price" step="1" required class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Old/Before Price (Opt)</label>
+            <label class="text-xs font-semibold text-gray-600">Old Price (Opt)</label>
             <input type="number" id="old_price" step="1" class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900" placeholder="e.g. 3500">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
-            <select id="category" class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
-              <option value="Earbuds">Earbuds</option>
-              <option value="Power Banks">Power Banks</option>
-              <option value="Mobile Chargers">Mobile Chargers</option>
-              <option value="Car Chargers">Car Chargers</option>
-              <option value="Handfree">Handfree</option>
-              <option value="Speakers">Speakers</option>
-              <option value="Headphone">Headphone</option>
-              <option value="Neckbands">Neckbands</option>
-              <option value="Battery">Battery</option>
-              <option value="PD Cable">PD Cable</option>
-              <option value="Data Cables">Data Cables</option>
-            </select>
+            <label class="text-xs font-semibold text-gray-600">Rating (e.g. 4.8)</label>
+            <input type="number" id="rating" step="0.1" min="1" max="5" value="4.8" class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
           </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
+          <select id="category" class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
+            <option value="Earbuds">Earbuds</option>
+            <option value="Power Banks">Power Banks</option>
+            <option value="Mobile Chargers">Mobile Chargers</option>
+            <option value="Car Chargers">Car Chargers</option>
+            <option value="Handfree">Handfree</option>
+            <option value="Speakers">Speakers</option>
+            <option value="Headphone">Headphone</option>
+            <option value="Neckbands">Neckbands</option>
+            <option value="Battery">Battery</option>
+            <option value="PD Cable">PD Cable</option>
+            <option value="Data Cables">Data Cables</option>
+          </select>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -240,6 +245,7 @@
 
       container.innerHTML = filtered.map(p => {
         const oldPriceVal = p.old_price || p.original_price;
+        const ratingVal = p.rating || 4.8;
         return `
           <tr class="border-b hover:bg-gray-50 text-sm">
             <td class="p-4">
@@ -253,6 +259,7 @@
             <td class="p-4 font-bold text-purple-950">
               PKR ${p.price}
               ${oldPriceVal ? `<br><span class="text-xs text-gray-400 line-through">PKR ${oldPriceVal}</span>` : ''}
+              <br><span class="text-xs text-amber-600 font-semibold">⭐ ${ratingVal}</span>
             </td>
             <td class="p-4 space-x-3">
               <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 font-semibold hover:underline">Edit</button>
@@ -293,6 +300,7 @@
     function openModal() {
       document.getElementById('product-form').reset();
       document.getElementById('product-id').value = '';
+      document.getElementById('rating').value = '4.8';
       document.getElementById('image-preview').classList.add('hidden');
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('main-image-container').innerHTML = '';
@@ -398,11 +406,13 @@
         }
 
         const oldPriceVal = document.getElementById('old_price').value.trim();
+        const ratingVal = document.getElementById('rating').value.trim();
 
         const payload = {
           title: document.getElementById('title').value.trim(),
           price: parseFloat(document.getElementById('price').value),
           old_price: oldPriceVal ? parseFloat(oldPriceVal) : null,
+          rating: ratingVal ? parseFloat(ratingVal) : 4.8,
           category: document.getElementById('category').value,
           model: document.getElementById('model').value.trim(),
           color: document.getElementById('color').value.trim(),
@@ -443,6 +453,7 @@
       document.getElementById('title').value = p.title;
       document.getElementById('price').value = p.price;
       document.getElementById('old_price').value = p.old_price || p.original_price || '';
+      document.getElementById('rating').value = p.rating || 4.8;
       document.getElementById('category').value = p.category;
       document.getElementById('model').value = p.model || '';
       document.getElementById('color').value = p.color || '';
