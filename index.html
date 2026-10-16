@@ -31,11 +31,11 @@
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-purple-950">Manage Products & Collections</h2>
           <button onclick="openModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
-            + Add New Product / Collection
+            + Add New Product
           </button>
         </div>
 
-        <!-- App ki tarah sari Collections / Categories ki strip yahan show hogi -->
+        <!-- Collections / Category Filter Chips -->
         <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6"></div>
 
         <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -56,7 +56,7 @@
         </div>
       </section>
 
-      <!-- Orders Section with Full Details, Status Control & Delete Option -->
+      <!-- Orders Section -->
       <section id="section-orders" class="hidden">
         <h2 class="text-2xl font-bold text-purple-950 mb-2">Customer Live Orders & Delivery Details</h2>
         <p class="text-gray-500 text-sm mb-6">Manage shipping status, view complete customer delivery info, or delete old orders.</p>
@@ -68,29 +68,41 @@
     </main>
   </div>
 
-  <!-- Add/Edit Modal -->
+  <!-- Add/Edit Product Modal with Multiple Images, Video & Collections -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
-      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product & Collection</h3>
+      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
+        
         <div>
           <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image URL</label>
-          <input type="text" id="image_url" placeholder="Paste image link here" class="w-full border p-2 rounded-lg text-xs" required>
+          <input type="text" id="image_url" placeholder="Paste main image link" required class="w-full border p-2 rounded-lg text-xs">
         </div>
-        <div>
-          <label class="text-xs font-semibold text-gray-600">Product Title</label>
-          <input type="text" id="title" required class="w-full p-2 border rounded-lg text-sm">
-        </div>
+
         <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Product Title</label>
+            <input type="text" id="title" required class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Model</label>
+            <input type="text" id="model" placeholder="e.g. TS03" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="text-xs font-semibold text-gray-600">Price (PKR)</label>
             <input type="number" id="price" required class="w-full p-2 border rounded-lg text-sm">
           </div>
           <div>
+            <label class="text-xs font-semibold text-gray-600">Old Price (Optional)</label>
+            <input type="number" id="old_price" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
             <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
-            <!-- Saree 11+ collections select karne ya apni marzi ki nayi likhne ka option -->
-            <input type="text" id="category" list="default-categories" placeholder="Select or type new collection" required class="w-full p-2 border rounded-lg text-sm">
+            <input type="text" id="category" list="default-categories" placeholder="Select or type collection" required class="w-full p-2 border rounded-lg text-sm">
             <datalist id="default-categories">
               <option value="Earbuds">
               <option value="Power Banks">
@@ -106,10 +118,22 @@
             </datalist>
           </div>
         </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Up to 4 additional image URLs, comma separated or JSON list)</label>
+          <input type="text" id="extra_images" placeholder="https://img1.jpg, https://img2.jpg" class="w-full border p-2 rounded-lg text-xs">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Video URL (Optional)</label>
+          <input type="text" id="video_url" placeholder="Paste video MP4 link" class="w-full border p-2 rounded-lg text-xs">
+        </div>
+
         <div>
           <label class="text-xs font-semibold text-gray-600">Description</label>
           <textarea id="description" rows="2" class="w-full p-2 border rounded-lg text-sm"></textarea>
         </div>
+
         <div class="flex justify-end space-x-2 pt-2">
           <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-200">Cancel</button>
           <button type="submit" id="save-btn" class="px-5 py-2 text-sm rounded-lg bg-purple-900 text-white font-semibold">Save Product</button>
@@ -152,7 +176,6 @@
       const filtersContainer = document.getElementById('admin-category-filters');
       let categories = ['All', 'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 'Handfree', 'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables'];
       
-      // Agar database mein koi aur nayi collection bhi hui toh usay bhi list mein add kar dein ge
       allProducts.forEach(p => {
         if (p.category && !categories.includes(p.category)) {
           categories.push(p.category);
@@ -195,33 +218,96 @@
       container.innerHTML = filtered.map(p => `
         <tr class="border-b hover:bg-gray-50 text-sm">
           <td class="p-4"><img src="${p.image_url || ''}" class="w-12 h-12 object-contain bg-gray-100 rounded"></td>
-          <td class="p-4 font-bold text-gray-800">${p.title}</td>
+          <td class="p-4 font-bold text-gray-800">${p.title}<br><span class="text-xs text-gray-400">Model: ${p.model || '-'}</span></td>
           <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category || 'General'}</span></td>
           <td class="p-4 font-bold text-purple-950">PKR ${p.price}</td>
-          <td class="p-4"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button></td>
+          <td class="p-4 space-x-2">
+            <button onclick="editProduct(${p.id})" class="text-blue-600 font-semibold hover:underline">Edit</button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
 
+    function openModal() {
+      document.getElementById('modal-title').innerText = 'Add Product & Collection';
+      document.getElementById('product-form').reset();
+      document.getElementById('product-id').value = '';
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('product-modal').classList.add('hidden');
+    }
+
+    function editProduct(id) {
+      const p = allProducts.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('modal-title').innerText = 'Edit Product';
+      document.getElementById('product-id').value = p.id;
+      document.getElementById('title').value = p.title || '';
+      document.getElementById('model').value = p.model || '';
+      document.getElementById('price').value = p.price || '';
+      document.getElementById('old_price').value = p.old_price || '';
+      document.getElementById('category').value = p.category || '';
+      document.getElementById('image_url').value = p.image_url || '';
+      document.getElementById('description').value = p.description || '';
+      document.getElementById('video_url').value = p.video_url || '';
+      
+      if (p.images && Array.isArray(p.images)) {
+        document.getElementById('extra_images').value = p.images.join(', ');
+      } else {
+        document.getElementById('extra_images').value = '';
+      }
+
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
     async function saveProduct(event) {
       event.preventDefault();
+      const id = document.getElementById('product-id').value;
       const title = document.getElementById('title').value;
+      const model = document.getElementById('model').value;
       const price = parseFloat(document.getElementById('price').value);
+      const old_price = document.getElementById('old_price').value ? parseFloat(document.getElementById('old_price').value) : null;
       const category = document.getElementById('category').value.trim();
       const description = document.getElementById('description').value;
       const image_url = document.getElementById('image_url').value;
+      const video_url = document.getElementById('video_url').value;
+      
+      let extraImagesText = document.getElementById('extra_images').value.trim();
+      let imagesList = extraImagesText ? extraImagesText.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
 
-      const { error } = await dbClient.from('products').insert([{
-        title, price, category, description, image_url
-      }]);
+      const productData = {
+        title,
+        model,
+        price,
+        old_price,
+        category,
+        description,
+        image_url,
+        video_url,
+        images: imagesList
+      };
+
+      let error;
+      if (id) {
+        // Update existing product
+        const res = await dbClient.from('products').update(productData).eq('id', id);
+        error = res.error;
+      } else {
+        // Insert new product
+        const res = await dbClient.from('products').insert([productData]);
+        error = res.error;
+      }
 
       if (!error) {
         closeModal();
-        document.getElementById('product-form').reset();
         loadProducts();
-        alert('Product and collection added successfully!');
+        alert('Product saved successfully!');
       } else {
-        alert('Error saving product.');
+        alert('Error saving product: ' + error.message);
       }
     }
 
@@ -286,10 +372,8 @@
       }
     }
 
-    function openModal() { document.getElementById('product-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
     async function deleteProduct(id) {
-      if(confirm('Delete product?')) {
+      if(confirm('Are you sure you want to delete this product?')) {
         await dbClient.from('products').delete().eq('id', id);
         loadProducts();
       }
