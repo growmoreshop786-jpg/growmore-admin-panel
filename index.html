@@ -86,10 +86,23 @@
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
 
-        <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('product-image').click()">
-          <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewImage(event)">
-          <img id="image-preview" class="h-40 mx-auto hidden object-contain mb-2 rounded-lg">
-          <p id="upload-placeholder" class="text-xs text-gray-500">📷 Click here to select image</p>
+        <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Main Cover Image</label>
+          <div class="border-2 border-dashed border-gray-300 rounded-xl p-3 text-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('product-image').click()">
+            <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewImage(event)">
+            <img id="image-preview" class="h-32 mx-auto hidden object-contain mb-1 rounded-lg">
+            <p id="upload-placeholder" class="text-xs text-gray-500">📷 Click here to select main cover photo</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Extra Gallery Images URLs (Up to 5, comma separated or links)</label>
+          <input type="text" id="images-input" placeholder="https://..., https://..." class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-600">Video URL (YouTube / MP4 link)</label>
+          <input type="text" id="video-url" placeholder="https://..." class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
         </div>
 
         <div>
@@ -331,6 +344,9 @@
           }
         }
 
+        const imagesRaw = document.getElementById('images-input').value.trim();
+        const imagesList = imagesRaw ? imagesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
         const payload = {
           title: document.getElementById('title').value.trim(),
           price: parseFloat(document.getElementById('price').value),
@@ -338,7 +354,9 @@
           model: document.getElementById('model').value.trim(),
           color: document.getElementById('color').value.trim(),
           description: document.getElementById('description').value.trim(),
-          image_url: imageUrl
+          image_url: imageUrl,
+          images: imagesList,
+          video_url: document.getElementById('video-url').value.trim()
         };
 
         let dbError = null;
@@ -375,10 +393,11 @@
       document.getElementById('model').value = p.model || '';
       document.getElementById('color').value = p.color || '';
       document.getElementById('description').value = p.description || '';
+      document.getElementById('images-input').value = p.images ? p.images.join(', ') : '';
+      document.getElementById('video-url').value = p.video_url || '';
       
       currentImageUrl = p.image_url || '';
       if (currentImageUrl) {
-        document.getElementById('image-profile')?.classList.remove('hidden'); // safe fallback
         const preview = document.getElementById('image-preview');
         preview.src = currentImageUrl;
         preview.classList.remove('hidden');
