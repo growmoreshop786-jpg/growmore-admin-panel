@@ -68,16 +68,18 @@
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal with Multiple Images, Video & Collections -->
+  <!-- Add/Edit Product Modal with Direct File Uploads -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
-        
+        <input type="hidden" id="existing-image-url">
+        <input type="hidden" id="existing-video-url">
+
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image URL</label>
-          <input type="text" id="image_url" placeholder="Paste main image link" required class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image (Choose File)</label>
+          <input type="file" id="product-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs bg-gray-50">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -120,13 +122,14 @@
         </div>
 
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Up to 4 additional image URLs, comma separated or JSON list)</label>
-          <input type="text" id="extra_images" placeholder="https://img1.jpg, https://img2.jpg" class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Select up to 4 files)</label>
+          <input type="file" id="extra-images-files" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs bg-gray-50">
+          <input type="hidden" id="existing-extra-images">
         </div>
 
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Video URL (Optional)</label>
-          <input type="text" id="video_url" placeholder="Paste video MP4 link" class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Product Video (Choose MP4 File)</label>
+          <input type="file" id="product-video-file" accept="video/mp4,video/*" class="w-full border p-2 rounded-lg text-xs bg-gray-50">
         </div>
 
         <div>
@@ -233,6 +236,9 @@
       document.getElementById('modal-title').innerText = 'Add Product & Collection';
       document.getElementById('product-form').reset();
       document.getElementById('product-id').value = '';
+      document.getElementById('existing-image-url').value = '';
+      document.getElementById('existing-video-url').value = '';
+      document.getElementById('existing-extra-images').value = '';
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
@@ -251,21 +257,32 @@
       document.getElementById('price').value = p.price || '';
       document.getElementById('old_price').value = p.old_price || '';
       document.getElementById('category').value = p.category || '';
-      document.getElementById('image_url').value = p.image_url || '';
       document.getElementById('description').value = p.description || '';
-      document.getElementById('video_url').value = p.video_url || '';
       
-      if (p.images && Array.isArray(p.images)) {
-        document.getElementById('extra_images').value = p.images.join(', ');
-      } else {
-        document.getElementById('extra_images').value = '';
-      }
+      document.getElementById('existing-image-url').value = p.image_url || '';
+      document.getElementById('existing-video-url').value = p.video_url || '';
+      document.getElementById('existing-extra-images').value = p.images ? JSON.stringify(p.images) : '';
 
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
+    async function uploadFileToSupabase(file, folder) {
+      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const { data, error } = await dbClient.storage.from('products').upload(`${folder}/${fileName}`, file);
+      if (error) {
+        alert('Upload failed: ' + error.message);
+        return null;
+      }
+      const { data: publicUrlData } = dbClient.storage.from('products').getPublicUrl(`${folder}/${fileName}`);
+      return publicUrlData.publicUrl;
+    }
+
     async function saveProduct(event) {
       event.preventDefault();
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.innerText = 'Saving...';
+      saveBtn.disabled = true;
+
       const id = document.getElementById('product-id').value;
       const title = document.getElementById('title').value;
       const model = document.getElementById('model').value;
@@ -273,11 +290,33 @@
       const old_price = document.getElementById('old_price').value ? parseFloat(document.getElementById('old_price').value) : null;
       const category = document.getElementById('category').value.trim();
       const description = document.getElementById('description').value;
-      const image_url = document.getElementById('image_url').value;
-      const video_url = document.getElementById('video_url').value;
-      
-      let extraImagesText = document.getElementById('extra_images').value.trim();
-      let imagesList = extraImagesText ? extraImagesText.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+
+      let image_url = document.getElementById('existing-image-url').value;
+      let video_url = document.getElementById('existing-video-url').value;
+      let imagesList = document.getElementById('existing-extra-images').value ? JSON.parse(document.getElementById('existing-extra-images').value) : [];
+
+      // 1. Upload Main Cover Image if selected
+      const mainImageFile = document.getElementById('product-image-file').files[0];
+      if (mainImageFile) {
+        const uploadedUrl = await uploadFileToSupabase(mainImageFile, 'images');
+        if (uploadedUrl) image_url = uploadedUrl;
+      }
+
+      // 2. Upload Video if selected
+      const videoFile = document.getElementById('product-video-file').files[0];
+      if (videoFile) {
+        const uploadedVideoUrl = await uploadFileToSupabase(videoFile, 'videos');
+        if (uploadedVideoUrl) video_url = uploadedVideoUrl;
+      }
+
+      // 3. Upload Extra Images if selected
+      const extraImageFiles = document.getElementById('extra-images-files').files;
+      if (extraImageFiles && extraImageFiles.length > 0) {
+        for (let i = 0; i < extraImageFiles.length; i++) {
+          const extraUrl = await uploadFileToSupabase(extraImageFiles[i], 'images');
+          if (extraUrl) imagesList.push(extraUrl);
+        }
+      }
 
       const productData = {
         title,
@@ -293,19 +332,20 @@
 
       let error;
       if (id) {
-        // Update existing product
         const res = await dbClient.from('products').update(productData).eq('id', id);
         error = res.error;
       } else {
-        // Insert new product
         const res = await dbClient.from('products').insert([productData]);
         error = res.error;
       }
 
+      saveBtn.innerText = 'Save Product';
+      saveBtn.disabled = false;
+
       if (!error) {
         closeModal();
         loadProducts();
-        alert('Product saved successfully!');
+        alert('Product and files saved successfully!');
       } else {
         alert('Error saving product: ' + error.message);
       }
