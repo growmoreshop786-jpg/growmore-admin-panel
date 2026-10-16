@@ -53,10 +53,10 @@
         </div>
       </section>
 
-      <!-- Orders Section with Full Details & Status Control -->
+      <!-- Orders Section with Full Details, Status Control & Delete Option -->
       <section id="section-orders" class="hidden">
         <h2 class="text-2xl font-bold text-purple-950 mb-2">Customer Live Orders & Delivery Details</h2>
-        <p class="text-gray-500 text-sm mb-6">Manage shipping status and view complete customer delivery info.</p>
+        <p class="text-gray-500 text-sm mb-6">Manage shipping status, view complete customer delivery info, or delete old orders.</p>
         <div id="orders-list" class="space-y-4">
           <p class="text-gray-500">Loading orders...</p>
         </div>
@@ -147,7 +147,7 @@
           <td class="p-4 font-bold text-gray-800">${p.title}</td>
           <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category}</span></td>
           <td class="p-4 font-bold text-purple-950">PKR ${p.price}</td>
-          <td class="p-4"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold">Delete</button></td>
+          <td class="p-4"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button></td>
         </tr>
       `).join('');
     }
@@ -170,7 +170,10 @@
           <div class="bg-white p-6 rounded-xl shadow border-l-4 border-purple-900 space-y-3">
             <div class="flex justify-between items-center">
               <span class="font-bold text-lg text-purple-950">Order #${o.id} - ${o.customer_name}</span>
-              <span class="text-xs px-3 py-1 rounded-full font-bold bg-purple-100 text-purple-800">${o.status || 'Pending'}</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs px-3 py-1 rounded-full font-bold bg-purple-100 text-purple-800">${o.status || 'Pending'}</span>
+                <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-3 py-1 rounded text-xs font-bold hover:bg-red-100">🗑️ Delete Order</button>
+              </div>
             </div>
             
             <div class="bg-gray-50 p-3 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -202,6 +205,17 @@
     async function updateOrderStatus(orderId, newStatus) {
       await dbClient.from('orders').update({ status: newStatus }).eq('id', orderId);
       loadOrders();
+    }
+
+    async function deleteOrder(orderId) {
+      if (confirm('Kya aap waqai is order ko delete karna chahte hain?')) {
+        const { error } = await dbClient.from('orders').delete().eq('id', orderId);
+        if (!error) {
+          loadOrders();
+        } else {
+          alert('Order delete karne mein koi masla aaya hai.');
+        }
+      }
     }
 
     function openModal() { document.getElementById('product-modal').classList.remove('hidden'); }
