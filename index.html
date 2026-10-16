@@ -29,12 +29,11 @@
       <!-- Products Section -->
       <section id="section-products">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-purple-950">Manage Products</h2>
+          <h2 class="text-2xl font-bold text-purple-950">Manage Products & Collections</h2>
           <button onclick="openModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
-            + Add New Product
+            + Add New Product / Collection
           </button>
         </div>
-        <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6"></div>
         <div class="bg-white rounded-xl shadow overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead class="bg-purple-50 border-b border-purple-100">
@@ -53,7 +52,7 @@
         </div>
       </section>
 
-      <!-- Orders Section with Full Details, Status Control & Delete Option -->
+      <!-- Orders Section -->
       <section id="section-orders" class="hidden">
         <h2 class="text-2xl font-bold text-purple-950 mb-2">Customer Live Orders & Delivery Details</h2>
         <p class="text-gray-500 text-sm mb-6">Manage shipping status, view complete customer delivery info, or delete old orders.</p>
@@ -65,15 +64,15 @@
     </main>
   </div>
 
-  <!-- Add/Edit Modal (Products) -->
+  <!-- Add/Edit Modal (Products with Custom Collection Support) -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
-      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
+      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product / New Collection</h3>
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image</label>
-          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image URL or File</label>
+          <input type="text" id="image_url" placeholder="Paste Image URL here" class="w-full border p-2 rounded-lg text-xs">
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-600">Product Title</label>
@@ -85,14 +84,9 @@
             <input type="number" id="price" required class="w-full p-2 border rounded-lg text-sm">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Category</label>
-            <select id="category" class="w-full p-2 border rounded-lg text-sm">
-              <option value="Earbuds">Earbuds</option>
-              <option value="Power Banks">Power Banks</option>
-              <option value="Mobile Chargers">Mobile Chargers</option>
-              <option value="Speakers">Speakers</option>
-              <option value="Data Cables">Data Cables</option>
-            </select>
+            <label class="text-xs font-semibold text-gray-600">Collection / Category Name</label>
+            <input type="text" id="category" placeholder="e.g. Earbuds, Smart Watch, Chargers" required class="w-full p-2 border rounded-lg text-sm">
+            <span class="text-[10px] text-gray-400">Yahan koi bhi nayi collection ka naam likh sakte hain!</span>
           </div>
         </div>
         <div>
@@ -145,11 +139,32 @@
         <tr class="border-b hover:bg-gray-50 text-sm">
           <td class="p-4"><img src="${p.image_url || ''}" class="w-12 h-12 object-contain bg-gray-100 rounded"></td>
           <td class="p-4 font-bold text-gray-800">${p.title}</td>
-          <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category}</span></td>
+          <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category || 'General'}</span></td>
           <td class="p-4 font-bold text-purple-950">PKR ${p.price}</td>
           <td class="p-4"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button></td>
         </tr>
       `).join('');
+    }
+
+    async function saveProduct(event) {
+      event.preventDefault();
+      const title = document.getElementById('title').value;
+      const price = parseFloat(document.getElementById('price').value);
+      const category = document.getElementById('category').value.trim();
+      const description = document.getElementById('description').value;
+      const image_url = document.getElementById('image_url').value;
+
+      const { error } = await dbClient.from('products').insert([{
+        title, price, category, description, image_url
+      }]);
+
+      if (!error) {
+        closeModal();
+        loadProducts();
+        alert('Product & Collection added successfully!');
+      } else {
+        alert('Error saving product.');
+      }
     }
 
     async function loadOrders() {
@@ -189,7 +204,6 @@
             <div class="flex justify-between items-center pt-2 border-t">
               <span class="font-bold text-purple-950 text-base">Grand Total: PKR ${o.total_amount}</span>
               
-              <!-- Status Control Buttons -->
               <div class="space-x-1">
                 <button onclick="updateOrderStatus(${o.id}, 'Pending')" class="px-3 py-1 text-xs rounded bg-orange-100 text-orange-800 font-bold hover:bg-orange-200">Pending</button>
                 <button onclick="updateOrderStatus(${o.id}, 'Processing')" class="px-3 py-1 text-xs rounded bg-blue-100 text-blue-800 font-bold hover:bg-blue-200">Processing</button>
@@ -210,11 +224,7 @@
     async function deleteOrder(orderId) {
       if (confirm('Kya aap waqai is order ko delete karna chahte hain?')) {
         const { error } = await dbClient.from('orders').delete().eq('id', orderId);
-        if (!error) {
-          loadOrders();
-        } else {
-          alert('Order delete karne mein koi masla aaya hai.');
-        }
+        if (!error) loadOrders();
       }
     }
 
