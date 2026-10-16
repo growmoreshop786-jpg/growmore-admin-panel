@@ -78,9 +78,11 @@
         <input type="hidden" id="existing-video-url">
         <input type="hidden" id="existing-extra-images">
 
-        <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image (Choose File)</label>
-          <input type="file" id="product-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs bg-gray-50">
+        <!-- Main Image Preview & Upload -->
+        <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">🖼️ Main Cover Image</label>
+          <div id="main-image-preview-container" class="mb-2"></div>
+          <input type="file" id="product-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs bg-white">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -101,7 +103,7 @@
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Old Price (Optional)</label>
-            <input type="number" id="old_price" class="w-full p-2 border rounded-lg text-sm">
+            <input type="number" id="old_price" class="w-full border rounded-lg text-sm">
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
@@ -122,12 +124,14 @@
           </div>
         </div>
 
-        <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Select up to 4 files)</label>
-          <input type="file" id="extra-images-files" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs bg-gray-50">
+        <!-- Extra Images Preview & Upload -->
+        <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">📂 Extra Images (Multiple)</label>
+          <div id="extra-images-preview-container" class="flex flex-wrap gap-2 mb-2"></div>
+          <input type="file" id="extra-images-files" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs bg-white">
         </div>
 
-        <!-- Video Upload & Status Section -->
+        <!-- Video Preview & Upload -->
         <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
           <label class="text-xs font-semibold text-purple-950 block mb-1">🎥 Product Video (MP4)</label>
           <div id="video-status-container" class="mb-2 text-xs text-gray-600"></div>
@@ -243,7 +247,9 @@
       document.getElementById('existing-image-url').value = '';
       document.getElementById('existing-video-url').value = '';
       document.getElementById('existing-extra-images').value = '';
-      document.getElementById('video-status-container').innerHTML = '<span class="text-gray-400">No video uploaded yet.</span>';
+      document.getElementById('main-image-preview-container').innerHTML = '<span class="text-gray-400 text-xs">No image selected</span>';
+      document.getElementById('extra-images-preview-container').innerHTML = '<span class="text-gray-400 text-xs">No extra images</span>';
+      document.getElementById('video-status-container').innerHTML = '<span class="text-gray-400 text-xs">No video uploaded yet</span>';
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
@@ -268,7 +274,23 @@
       document.getElementById('existing-video-url').value = p.video_url || '';
       document.getElementById('existing-extra-images').value = p.images ? JSON.stringify(p.images) : '';
 
-      // Video Status Show karein
+      // 1. Main Image Preview
+      const mainImgContainer = document.getElementById('main-image-preview-container');
+      if (p.image_url) {
+        mainImgContainer.innerHTML = `<img src="${p.image_url}" class="w-16 h-16 object-cover rounded-lg border shadow-sm">`;
+      } else {
+        mainImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No cover image</span>';
+      }
+
+      // 2. Extra Images Preview
+      const extraImgContainer = document.getElementById('extra-images-preview-container');
+      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+        extraImgContainer.innerHTML = p.images.map(img => `<img src="${img}" class="w-12 h-12 object-cover rounded border">`).join('');
+      } else {
+        extraImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No extra images</span>';
+      }
+
+      // 3. Video Preview
       const videoContainer = document.getElementById('video-status-container');
       if (p.video_url) {
         videoContainer.innerHTML = `
@@ -276,7 +298,7 @@
           <a href="${p.video_url}" target="_blank" class="text-blue-600 underline text-[11px]">View Current Video</a>
         `;
       } else {
-        videoContainer.innerHTML = '<span class="text-gray-400">No video uploaded for this product.</span>';
+        videoContainer.innerHTML = '<span class="text-gray-400 text-xs">No video uploaded for this product.</span>';
       }
 
       document.getElementById('product-modal').classList.remove('hidden');
@@ -311,21 +333,21 @@
       let video_url = document.getElementById('existing-video-url').value;
       let imagesList = document.getElementById('existing-extra-images').value ? JSON.parse(document.getElementById('existing-extra-images').value) : [];
 
-      // 1. Upload Main Cover Image if selected
+      // 1. Upload Main Cover Image if new selected
       const mainImageFile = document.getElementById('product-image-file').files[0];
       if (mainImageFile) {
         const uploadedUrl = await uploadFileToSupabase(mainImageFile, 'images');
         if (uploadedUrl) image_url = uploadedUrl;
       }
 
-      // 2. Upload Video if selected
+      // 2. Upload Video if new selected
       const videoFile = document.getElementById('product-video-file').files[0];
       if (videoFile) {
         const uploadedVideoUrl = await uploadFileToSupabase(videoFile, 'videos');
         if (uploadedVideoUrl) video_url = uploadedVideoUrl;
       }
 
-      // 3. Upload Extra Images if selected
+      // 3. Upload Extra Images if new selected
       const extraImageFiles = document.getElementById('extra-images-files').files;
       if (extraImageFiles && extraImageFiles.length > 0) {
         for (let i = 0; i < extraImageFiles.length; i++) {
