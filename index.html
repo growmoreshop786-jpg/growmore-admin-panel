@@ -98,11 +98,19 @@
             <input type="number" id="price" step="1" required class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Category</label>
+            <label class="text-xs font-semibold text-gray-600">Category / Collection</label>
             <select id="category" class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
-              <option value="Headphones">Headphones</option>
-              <option value="Chargers">Chargers</option>
-              <option value="Accessories">Accessories</option>
+              <option value="Earbuds">Earbuds</option>
+              <option value="Power Banks">Power Banks</option>
+              <option value="Mobile Chargers">Mobile Chargers</option>
+              <option value="Car Chargers">Car Chargers</option>
+              <option value="Handfree">Handfree</option>
+              <option value="Speakers">Speakers</option>
+              <option value="Headphone">Headphone</option>
+              <option value="Neckbands">Neckbands</option>
+              <option value="Battery">Battery</option>
+              <option value="PD Cable">PD Cable</option>
+              <option value="Data Cables">Data Cables</option>
             </select>
           </div>
         </div>
@@ -136,7 +144,6 @@
     const SUPABASE_URL = 'https://kynzggetoskcafgxjlgi.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_R-obr5pUe_3_Lq9-7-LoRg_f6vMv8Sl';
     
-    // Single Declaration Only
     const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let selectedFile = null;
@@ -263,7 +270,6 @@
             });
 
           if (uploadError) {
-            console.error('Storage Upload Error:', uploadError);
             alert('Image Upload Failed: ' + uploadError.message);
           } else {
             const { data: publicUrlData } = dbClient.storage
@@ -296,7 +302,7 @@
         if (dbError) {
           alert('Database Error: ' + dbError.message);
         } else {
-          alert('Product saved successfully with image!');
+          alert('Product saved successfully!');
           closeModal();
           loadProducts();
         }
