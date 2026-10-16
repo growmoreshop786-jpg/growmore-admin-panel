@@ -103,7 +103,7 @@
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Old Price (Optional)</label>
-            <input type="number" id="old_price" class="w-full border rounded-lg text-sm">
+            <input type="number" id="old_price" class="w-full p-2 border rounded-lg text-sm">
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
@@ -274,7 +274,7 @@
       document.getElementById('existing-video-url').value = p.video_url || '';
       document.getElementById('existing-extra-images').value = p.images ? JSON.stringify(p.images) : '';
 
-      // 1. Main Image Preview
+      // Main Image Preview
       const mainImgContainer = document.getElementById('main-image-preview-container');
       if (p.image_url) {
         mainImgContainer.innerHTML = `<img src="${p.image_url}" class="w-16 h-16 object-cover rounded-lg border shadow-sm">`;
@@ -282,7 +282,7 @@
         mainImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No cover image</span>';
       }
 
-      // 2. Extra Images Preview
+      // Extra Images Preview
       const extraImgContainer = document.getElementById('extra-images-preview-container');
       if (p.images && Array.isArray(p.images) && p.images.length > 0) {
         extraImgContainer.innerHTML = p.images.map(img => `<img src="${img}" class="w-12 h-12 object-cover rounded border">`).join('');
@@ -290,7 +290,7 @@
         extraImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No extra images</span>';
       }
 
-      // 3. Video Preview
+      // Video Preview
       const videoContainer = document.getElementById('video-status-container');
       if (p.video_url) {
         videoContainer.innerHTML = `
@@ -306,12 +306,13 @@
 
     async function uploadFileToSupabase(file, folder) {
       const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-      const { data, error } = await dbClient.storage.from('products').upload(`${folder}/${fileName}`, file);
+      // yahan 'product-images' bucket ka istemal kiya gaya hai jo aapke SQL setup mein hai
+      const { data, error } = await dbClient.storage.from('product-images').upload(`${folder}/${fileName}`, file);
       if (error) {
         alert('Upload failed: ' + error.message);
         return null;
       }
-      const { data: publicUrlData } = dbClient.storage.from('products').getPublicUrl(`${folder}/${fileName}`);
+      const { data: publicUrlData } = dbClient.storage.from('product-images').getPublicUrl(`${folder}/${fileName}`);
       return publicUrlData.publicUrl;
     }
 
