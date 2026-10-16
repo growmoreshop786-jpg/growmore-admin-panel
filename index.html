@@ -78,10 +78,10 @@
         <input type="hidden" id="existing-video-url">
         <input type="hidden" id="existing-extra-images">
 
-        <!-- Main Image Preview & Upload -->
+        <!-- Main Image Preview & Delete Option -->
         <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <label class="text-xs font-semibold text-gray-700 block mb-1">🖼️ Main Cover Image</label>
-          <div id="main-image-preview-container" class="mb-2"></div>
+          <div id="main-image-preview-container" class="mb-2 flex items-center gap-3"></div>
           <input type="file" id="product-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs bg-white">
         </div>
 
@@ -103,7 +103,7 @@
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Old Price (Optional)</label>
-            <input type="number" id="old_price" class="w-full p-2 border rounded-lg text-sm">
+            <input type="number" id="old_price" class="w-full border rounded-lg text-sm">
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
@@ -124,17 +124,17 @@
           </div>
         </div>
 
-        <!-- Extra Images Preview & Upload -->
+        <!-- Extra Images Preview & Delete Option -->
         <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <label class="text-xs font-semibold text-gray-700 block mb-1">📂 Extra Images (Multiple)</label>
-          <div id="extra-images-preview-container" class="flex flex-wrap gap-2 mb-2"></div>
+          <div id="extra-images-preview-container" class="flex flex-wrap gap-3 mb-2"></div>
           <input type="file" id="extra-images-files" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs bg-white">
         </div>
 
-        <!-- Video Preview & Upload -->
+        <!-- Video Preview & Delete Option -->
         <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
           <label class="text-xs font-semibold text-purple-950 block mb-1">🎥 Product Video (MP4)</label>
-          <div id="video-status-container" class="mb-2 text-xs text-gray-600"></div>
+          <div id="video-status-container" class="mb-2 text-xs text-gray-600 flex items-center justify-between"></div>
           <input type="file" id="product-video-file" accept="video/mp4,video/*" class="w-full border p-2 rounded-lg text-xs bg-white">
         </div>
 
@@ -274,28 +274,29 @@
       document.getElementById('existing-video-url').value = p.video_url || '';
       document.getElementById('existing-extra-images').value = p.images ? JSON.stringify(p.images) : '';
 
-      // Main Image Preview
+      // 1. Main Image Preview with Delete Button
       const mainImgContainer = document.getElementById('main-image-preview-container');
       if (p.image_url) {
-        mainImgContainer.innerHTML = `<img src="${p.image_url}" class="w-16 h-16 object-cover rounded-lg border shadow-sm">`;
+        mainImgContainer.innerHTML = `
+          <img src="${p.image_url}" class="w-16 h-16 object-cover rounded-lg border shadow-sm">
+          <button type="button" onclick="removeMainImage()" class="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded font-bold hover:bg-red-100">🗑️ Delete Cover Image</button>
+        `;
       } else {
         mainImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No cover image</span>';
       }
 
-      // Extra Images Preview
-      const extraImgContainer = document.getElementById('extra-images-preview-container');
-      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-        extraImgContainer.innerHTML = p.images.map(img => `<img src="${img}" class="w-12 h-12 object-cover rounded border">`).join('');
-      } else {
-        extraImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No extra images</span>';
-      }
+      // 2. Extra Images Preview with Delete Button per image
+      renderExtraImagesPreview(p.images || []);
 
-      // Video Preview
+      // 3. Video Preview with Delete Button
       const videoContainer = document.getElementById('video-status-container');
       if (p.video_url) {
         videoContainer.innerHTML = `
-          <span class="text-green-700 font-semibold">✅ Video already uploaded!</span><br>
-          <a href="${p.video_url}" target="_blank" class="text-blue-600 underline text-[11px]">View Current Video</a>
+          <div>
+            <span class="text-green-700 font-semibold">✅ Video uploaded!</span><br>
+            <a href="${p.video_url}" target="_blank" class="text-blue-600 underline text-[11px]">View Current Video</a>
+          </div>
+          <button type="button" onclick="removeVideo()" class="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded font-bold hover:bg-red-100">🗑️ Delete Video</button>
         `;
       } else {
         videoContainer.innerHTML = '<span class="text-gray-400 text-xs">No video uploaded for this product.</span>';
@@ -304,9 +305,40 @@
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
+    function removeMainImage() {
+      document.getElementById('existing-image-url').value = '';
+      document.getElementById('main-image-preview-container.innerHTML') = '';
+      document.getElementById('main-image-preview-container').innerHTML = '<span class="text-red-500 text-xs">Cover image removed. Save changes or upload new.</span>';
+    }
+
+    function removeVideo() {
+      document.getElementById('existing-video-url').value = '';
+      document.getElementById('video-status-container').innerHTML = '<span class="text-red-500 text-xs">Video removed. Save changes or upload new.</span>';
+    }
+
+    function renderExtraImagesPreview(imagesArray) {
+      const extraImgContainer = document.getElementById('extra-images-preview-container');
+      if (imagesArray.length === 0) {
+        extraImgContainer.innerHTML = '<span class="text-gray-400 text-xs">No extra images</span>';
+        return;
+      }
+      extraImgContainer.innerHTML = imagesArray.map((img, index) => `
+        <div class="relative inline-block border rounded p-1 bg-white">
+          <img src="${img}" class="w-12 h-12 object-cover rounded">
+          <button type="button" onclick="removeExtraImage(${index})" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center shadow">×</button>
+        </div>
+      `).join('');
+    }
+
+    function removeExtraImage(index) {
+      let imagesList = document.getElementById('existing-extra-images').value ? JSON.parse(document.getElementById('existing-extra-images').value) : [];
+      imagesList.splice(index, 1);
+      document.getElementById('existing-extra-images').value = JSON.stringify(imagesList);
+      renderExtraImagesPreview(imagesList);
+    }
+
     async function uploadFileToSupabase(file, folder) {
       const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-      // yahan 'product-images' bucket ka istemal kiya gaya hai jo aapke SQL setup mein hai
       const { data, error } = await dbClient.storage.from('product-images').upload(`${folder}/${fileName}`, file);
       if (error) {
         alert('Upload failed: ' + error.message);
