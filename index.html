@@ -35,7 +35,7 @@
           </button>
         </div>
 
-        <!-- Dynamic Collection / Category Filter Chips (Jaise App mein hain) -->
+        <!-- App ki tarah sari Collections / Categories ki strip yahan show hogi -->
         <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6"></div>
 
         <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -68,7 +68,7 @@
     </main>
   </div>
 
-  <!-- Add/Edit Modal (Products & Custom Collection Input) -->
+  <!-- Add/Edit Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product & Collection</h3>
@@ -76,7 +76,7 @@
         <input type="hidden" id="product-id">
         <div>
           <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image URL</label>
-          <input type="text" id="image_url" placeholder="Paste image link here" class="w-full border p-2 rounded-lg text-xs">
+          <input type="text" id="image_url" placeholder="Paste image link here" class="w-full border p-2 rounded-lg text-xs" required>
         </div>
         <div>
           <label class="text-xs font-semibold text-gray-600">Product Title</label>
@@ -88,10 +88,22 @@
             <input type="number" id="price" required class="w-full p-2 border rounded-lg text-sm">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Collection / Category Name</label>
-            <!-- Input text banaya hai taake admin apni marzi ki nayi collection likh sake -->
-            <input type="text" id="category" placeholder="e.g. Earbuds, Smart Watch" required class="w-full p-2 border rounded-lg text-sm">
-            <span class="text-[10px] text-gray-400">Yahan koi bhi nayi collection type karein!</span>
+            <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
+            <!-- Saree 11+ collections select karne ya apni marzi ki nayi likhne ka option -->
+            <input type="text" id="category" list="default-categories" placeholder="Select or type new collection" required class="w-full p-2 border rounded-lg text-sm">
+            <datalist id="default-categories">
+              <option value="Earbuds">
+              <option value="Power Banks">
+              <option value="Mobile Chargers">
+              <option value="Car Chargers">
+              <option value="Handfree">
+              <option value="Speakers">
+              <option value="Headphone">
+              <option value="Neckbands">
+              <option value="Battery">
+              <option value="PD Cable">
+              <option value="Data Cables">
+            </datalist>
           </div>
         </div>
         <div>
@@ -138,8 +150,9 @@
 
     function renderCategoryFilters() {
       const filtersContainer = document.getElementById('admin-category-filters');
-      let categories = ['All'];
+      let categories = ['All', 'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 'Handfree', 'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables'];
       
+      // Agar database mein koi aur nayi collection bhi hui toh usay bhi list mein add kar dein ge
       allProducts.forEach(p => {
         if (p.category && !categories.includes(p.category)) {
           categories.push(p.category);
