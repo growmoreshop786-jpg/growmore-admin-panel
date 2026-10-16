@@ -44,9 +44,7 @@
         </div>
 
         <!-- Collection Filter Chips for Admin -->
-        <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6">
-          <!-- Dynamically populated category filter buttons -->
-        </div>
+        <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6"></div>
 
         <div class="bg-white rounded-xl shadow overflow-hidden">
           <table class="w-full text-left border-collapse">
@@ -80,29 +78,33 @@
 
   <!-- Add/Edit Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl relative max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       
-      <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3">
+      <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
 
+        <!-- Main Cover Image -->
         <div>
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Main Cover Image</label>
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image (Required)</label>
           <div class="border-2 border-dashed border-gray-300 rounded-xl p-3 text-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('product-image').click()">
-            <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewImage(event)">
-            <img id="image-preview" class="h-32 mx-auto hidden object-contain mb-1 rounded-lg">
+            <input type="file" id="product-image" accept="image/*" class="hidden" onchange="previewMainImage(event)">
+            <img id="image-preview" class="h-28 mx-auto hidden object-contain mb-1 rounded-lg">
             <p id="upload-placeholder" class="text-xs text-gray-500">📷 Click here to select main cover photo</p>
           </div>
         </div>
 
+        <!-- 5 Extra Gallery Images -->
         <div>
-          <label class="text-xs font-semibold text-gray-600">Extra Gallery Images URLs (Up to 5, comma separated or links)</label>
-          <input type="text" id="images-input" placeholder="https://..., https://..." class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Gallery Images (Up to 5 Photos)</label>
+          <input type="file" id="gallery-images" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border rounded-lg p-2">
+          <p class="text-[11px] text-gray-400 mt-1">Aap ek sath 5 tak pictures select kar sakte hain.</p>
         </div>
 
+        <!-- Product Video File -->
         <div>
-          <label class="text-xs font-semibold text-gray-600">Video URL (YouTube / MP4 link)</label>
-          <input type="text" id="video-url" placeholder="https://..." class="w-full p-2 border rounded-lg text-sm focus:outline-purple-900">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Product Video (Optional MP4)</label>
+          <input type="file" id="product-video" accept="video/mp4,video/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border rounded-lg p-2">
         </div>
 
         <div>
@@ -165,22 +167,14 @@
 
     let allProducts = [];
     let selectedAdminCategory = 'All';
-    let selectedFile = null;
+    let selectedMainFile = null;
     let currentImageUrl = '';
+    let currentImagesList = [];
+    let currentVideoUrl = '';
 
     const categoriesList = [
-      'All',
-      'Earbuds',
-      'Power Banks',
-      'Mobile Chargers',
-      'Car Chargers',
-      'Handfree',
-      'Speakers',
-      'Headphone',
-      'Neckbands',
-      'Battery',
-      'PD Cable',
-      'Data Cables'
+      'All', 'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 
+      'Handfree', 'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables'
     ];
 
     window.onload = () => {
@@ -221,17 +215,13 @@
 
     async function loadProducts() {
       const { data, error } = await dbClient.from('products').select('*').order('id', { ascending: false });
-      if (error) {
-        console.error('Error loading products:', error);
-        return;
-      }
+      if (error) return;
       allProducts = data || [];
       displayProducts();
     }
 
     function displayProducts() {
       const container = document.getElementById('products-list');
-      
       let filtered = allProducts;
       if (selectedAdminCategory !== 'All') {
         filtered = allProducts.filter(p => p['category']?.toLowerCase() === selectedAdminCategory.toLowerCase());
@@ -264,12 +254,10 @@
     async function loadOrders() {
       const { data, error } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       const container = document.getElementById('orders-list');
-
       if (error || !data || !data.length) {
         container.innerHTML = `<p class="text-gray-400 text-center py-8">No customer orders received yet.</p>`;
         return;
       }
-
       container.innerHTML = data.map(o => {
         const isPending = o.status === 'Pending';
         return `
@@ -297,55 +285,76 @@
       document.getElementById('upload-placeholder').classList.remove('hidden');
       document.getElementById('modal-title').innerText = 'Add New Product';
       document.getElementById('product-modal').classList.remove('hidden');
-      selectedFile = null;
+      selectedMainFile = null;
       currentImageUrl = '';
+      currentImagesList = [];
+      currentVideoUrl = '';
     }
 
     function closeModal() {
       document.getElementById('product-modal').classList.add('hidden');
     }
 
-    function previewImage(e) {
-      selectedFile = e.target.files[0];
-      if (selectedFile) {
+    function previewMainImage(e) {
+      selectedMainFile = e.target.files[0];
+      if (selectedMainFile) {
         const reader = new FileReader();
         reader.onload = (event) => {
           document.getElementById('image-preview').src = event.target.result;
           document.getElementById('image-preview').classList.remove('hidden');
           document.getElementById('upload-placeholder').classList.add('hidden');
         };
-        reader.readAsDataURL(selectedFile);
+        reader.readAsDataURL(selectedMainFile);
       }
     }
 
     async function saveProduct(e) {
       e.preventDefault();
       const saveBtn = document.getElementById('save-btn');
-      saveBtn.innerText = 'Saving...';
+      saveBtn.innerText = 'Uploading & Saving...';
       saveBtn.disabled = true;
 
       const id = document.getElementById('product-id').value;
-      let imageUrl = currentImageUrl || '';
+      let imageUrl = currentImageUrl;
+      let galleryUrls = [...currentImagesList];
+      let videoUrl = currentVideoUrl;
 
       try {
-        if (selectedFile) {
-          const fileExt = selectedFile.name.split('.').pop();
-          const fileName = `${Date.now()}.${fileExt}`;
-
-          const { error: uploadError } = await dbClient.storage
-            .from('product-images')
-            .upload(fileName, selectedFile, { cacheControl: '3600', upsert: true });
-
-          if (uploadError) {
-            alert('Image Upload Failed: ' + uploadError.message);
-          } else {
-            const { data: publicUrlData } = dbClient.storage.from('product-images').getPublicUrl(fileName);
-            imageUrl = publicUrlData.publicUrl;
+        // 1. Upload Main Cover Image if selected
+        if (selectedMainFile) {
+          const fileName = `main_${Date.now()}.${selectedMainFile.name.split('.').pop()}`;
+          const { error } = await dbClient.storage.from('product-images').upload(fileName, selectedMainFile, { upsert: true });
+          if (!error) {
+            const { data } = dbClient.storage.from('product-images').getPublicUrl(fileName);
+            imageUrl = data.publicUrl;
           }
         }
 
-        const imagesRaw = document.getElementById('images-input').value.trim();
-        const imagesList = imagesRaw ? imagesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+        // 2. Upload Extra Gallery Images (up to 5)
+        const galleryFilesInput = document.getElementById('gallery-images');
+        if (galleryFilesInput.files.length > 0) {
+          const filesToUpload = Array.from(galleryFilesInput.files).slice(0, 5);
+          for (let file of filesToUpload) {
+            const fName = `gallery_${Date.now()}_${Math.random().toString(36.substring(2))}.${file.name.split('.').pop()}`;
+            const { error } = await dbClient.storage.from('product-images').upload(fName, file, { upsert: true });
+            if (!error) {
+              const { data } = dbClient.storage.from('product-images').getPublicUrl(fName);
+              galleryUrls.push(data.publicUrl);
+            }
+          }
+        }
+
+        // 3. Upload Video File if selected
+        const videoFileInput = document.getElementById('product-video');
+        if (videoFileInput.files.length > 0) {
+          const vFile = videoFileInput.files[0];
+          const vName = `video_${Date.now()}.${vFile.name.split('.').pop()}`;
+          const { error } = await dbClient.storage.from('product-images').upload(vName, vFile, { upsert: true });
+          if (!error) {
+            const { data } = dbClient.storage.from('product-images').getPublicUrl(vName);
+            videoUrl = data.publicUrl;
+          }
+        }
 
         const payload = {
           title: document.getElementById('title').value.trim(),
@@ -355,8 +364,8 @@
           color: document.getElementById('color').value.trim(),
           description: document.getElementById('description').value.trim(),
           image_url: imageUrl,
-          images: imagesList,
-          video_url: document.getElementById('video-url').value.trim()
+          images: galleryUrls,
+          video_url: videoUrl
         };
 
         let dbError = null;
@@ -371,7 +380,7 @@
         if (dbError) {
           alert('Database Error: ' + dbError.message);
         } else {
-          alert('Product saved successfully!');
+          alert('Product successfully saved with images and video!');
           closeModal();
           loadProducts();
         }
@@ -393,10 +402,11 @@
       document.getElementById('model').value = p.model || '';
       document.getElementById('color').value = p.color || '';
       document.getElementById('description').value = p.description || '';
-      document.getElementById('images-input').value = p.images ? p.images.join(', ') : '';
-      document.getElementById('video-url').value = p.video_url || '';
       
       currentImageUrl = p.image_url || '';
+      currentImagesList = p.images || [];
+      currentVideoUrl = p.video_url || '';
+
       if (currentImageUrl) {
         const preview = document.getElementById('image-preview');
         preview.src = currentImageUrl;
