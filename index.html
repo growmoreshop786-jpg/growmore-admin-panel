@@ -26,6 +26,9 @@
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🛒 Live Orders
       </button>
+      <button onclick="switchTab('users')" id="tab-users" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
+        👥 Registered Users
+      </button>
     </aside>
 
     <!-- Main Content -->
@@ -70,6 +73,26 @@
         <p class="text-gray-500 text-sm mb-6">Realtime updates when customers order from the mobile app.</p>
         <div id="orders-list" class="space-y-4">
           <p class="text-gray-500">Loading orders...</p>
+        </div>
+      </section>
+
+      <!-- Registered Users Section -->
+      <section id="section-users" class="hidden">
+        <h2 class="text-2xl font-bold text-purple-950 mb-2">Registered App Users</h2>
+        <p class="text-gray-500 text-sm mb-6">List of all customers who have created an account or logged into the app.</p>
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-purple-50 border-b border-purple-100">
+              <tr>
+                <th class="p-4 text-xs font-bold text-purple-900 uppercase">#</th>
+                <th class="p-4 text-xs font-bold text-purple-900 uppercase">User Email / Account</th>
+                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Registration Date</th>
+              </tr>
+            </thead>
+            <tbody id="users-list">
+              <tr><td colspan="3" class="p-4 text-center text-gray-500">Loading users...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -192,9 +215,14 @@
       renderCategoryFilters();
       loadProducts();
       loadOrders();
+      loadUsers();
       
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
+        .subscribe();
+
+      dbClient.channel('public:profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => loadUsers())
         .subscribe();
     };
 
@@ -219,9 +247,11 @@
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
+      document.getElementById('section-users').classList.toggle('hidden', tab !== 'users');
 
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
+      document.getElementById('tab-users').className = tab === 'users' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
     }
 
     async function loadProducts() {
@@ -293,6 +323,25 @@
               ${isPending ? 'Mark Completed' : 'Completed'}
             </button>
           </div>
+        `;
+      }).join('');
+    }
+
+    async function loadUsers() {
+      const { data, error } = await dbClient.from('profiles').select('*').order('created_at', { ascending: false });
+      const container = document.getElementById('users-list');
+      if (error || !data || !data.length) {
+        container.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400">No registered users found yet.</td></tr>`;
+        return;
+      }
+      container.innerHTML = data.map((u, index) => {
+        const formattedDate = new Date(u.created_at).toLocaleString();
+        return `
+          <tr class="border-b hover:bg-gray-50 text-sm">
+            <td class="p-4 font-semibold text-gray-600">${index + 1}</td>
+            <td class="p-4 font-bold text-purple-950">${u.email || 'No Email'}</td>
+            <td class="p-4 text-gray-500 text-xs">${formattedDate}</td>
+          </tr>
         `;
       }).join('');
     }
