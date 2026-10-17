@@ -79,7 +79,6 @@
         <p class="text-gray-500 text-sm mb-6">Apne laptop se nayi video file upload karein ya direct URL update karein.</p>
         
         <div class="bg-white p-6 rounded-xl shadow max-w-2xl space-y-4">
-          <!-- Current Intro Video Preview Player (Small Size) -->
           <div id="intro-preview-container" class="hidden bg-gray-50 p-2.5 rounded-lg border inline-block">
             <label class="text-xs font-semibold text-gray-700 block mb-1">Current Intro Video</label>
             <video id="intro-preview-player" src="" controls class="w-32 h-32 object-contain bg-black rounded border"></video>
@@ -110,7 +109,6 @@
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
         
-        <!-- Cover Image Section -->
         <div>
           <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image (Choose File)</label>
           <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
@@ -121,14 +119,12 @@
           </div>
         </div>
 
-        <!-- Extra Images Section -->
         <div>
           <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Choose Multiple Pictures)</label>
           <input type="file" id="product-extra-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
           <div id="extra-images-container" class="mt-2 flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Product Video Section -->
         <div>
           <label class="text-xs font-semibold text-gray-700 block mb-1">Product Video (Optional .mp4)</label>
           <input type="file" id="product-video-file" accept="video/*" class="w-full border p-2 rounded-lg text-xs">
@@ -148,9 +144,7 @@
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
-            <select id="category" class="w-full p-2 border rounded-lg text-sm">
-              <!-- Dynamic Categories Loaded Here -->
-            </select>
+            <select id="category" class="w-full p-2 border rounded-lg text-sm"></select>
           </div>
         </div>
 
@@ -266,12 +260,20 @@
     }
 
     function renderCategoryFilters() {
-      const cats = ['All', ...categoriesList];
       const container = document.getElementById('admin-category-filters');
-      container.innerHTML = cats.map(c => `
-        <button onclick="filterAdminCategory('${c}')" class="px-3 py-1.5 rounded-lg text-xs font-bold ${selectedAdminCategory === c ? 'bg-purple-900 text-white' : 'bg-white text-purple-900 border border-purple-200'}">
-          ${c}
+      container.innerHTML = `
+        <button onclick="filterAdminCategory('All')" class="px-3 py-1.5 rounded-lg text-xs font-bold ${selectedAdminCategory === 'All' ? 'bg-purple-900 text-white' : 'bg-white text-purple-900 border border-purple-200'}">
+          All
         </button>
+      ` + categoriesList.map(c => `
+        <div class="inline-flex items-center bg-white border border-purple-200 rounded-lg overflow-hidden shadow-sm">
+          <button onclick="filterAdminCategory('${c}')" class="px-3 py-1.5 text-xs font-bold ${selectedAdminCategory === c ? 'bg-purple-900 text-white' : 'text-purple-900 hover:bg-gray-50'}">
+            ${c}
+          </button>
+          <button onclick="deleteCategory('${c}')" title="Delete Collection" class="px-2 py-1.5 text-red-500 hover:bg-red-50 text-xs font-bold border-l border-purple-100">
+            ×
+          </button>
+        </div>
       `).join('');
     }
 
@@ -294,13 +296,25 @@
       const name = document.getElementById('new-category-name').value.trim();
       if (name && !categoriesList.includes(name)) {
         categoriesList.push(name);
-        // Save to Supabase settings table
         await dbClient.from('settings').upsert({ key: 'categories', value: JSON.stringify(categoriesList) });
         renderCategoryFilters();
         renderCategoryDropdown();
         filterAdminCategory(name);
       }
       closeCategoryModal();
+    }
+
+    async function deleteCategory(catName) {
+      if (confirm(`Kya aap waqai collection "${catName}" ko delete karna chahte hain?`)) {
+        categoriesList = categoriesList.filter(c => c !== catName);
+        await dbClient.from('settings').upsert({ key: 'categories', value: JSON.stringify(categoriesList) });
+        if (selectedAdminCategory === catName) {
+          selectedAdminCategory = 'All';
+        }
+        renderCategoryFilters();
+        renderCategoryDropdown();
+        displayProducts();
+      }
     }
 
     function filterAdminCategory(cat) {
@@ -556,7 +570,6 @@
       }
     }
 
-    // Intro Video Functions
     async function loadIntroVideoUrl() {
       try {
         const { data } = await dbClient.from('settings').select('value').eq('key', 'intro_video').maybeSingle();
