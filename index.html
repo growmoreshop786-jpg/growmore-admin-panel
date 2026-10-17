@@ -15,12 +15,15 @@
   </header>
 
   <div class="flex min-h-screen">
-    <aside class="w-64 bg-white shadow-md p-4 space-y-4">
+    <aside class="w-64 bg-white shadow-md p-4 space-y-3">
       <button onclick="switchTab('products')" id="tab-products" class="w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900">
         📦 Products Catalog
       </button>
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🛒 Live Orders & Details
+      </button>
+      <button onclick="switchTab('intro')" id="tab-intro" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
+        🎥 Intro Video Settings
       </button>
     </aside>
 
@@ -34,7 +37,9 @@
             + Add New Product
           </button>
         </div>
+        <!-- Category Filters -->
         <div id="admin-category-filters" class="flex flex-wrap gap-2 mb-6"></div>
+        
         <div class="bg-white rounded-xl shadow overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead class="bg-purple-50 border-b border-purple-100">
@@ -62,43 +67,106 @@
         </div>
       </section>
 
+      <!-- Intro Video Manager Section -->
+      <section id="section-intro" class="hidden">
+        <h2 class="text-2xl font-bold text-purple-950 mb-2">Manage App Intro Video</h2>
+        <p class="text-gray-500 text-sm mb-6">Apne laptop se nayi video file upload karein ya direct URL update karein.</p>
+        
+        <div class="bg-white p-6 rounded-xl shadow max-w-2xl space-y-4">
+          <div>
+            <label class="text-xs font-semibold text-gray-700 block mb-2">Upload Video from Laptop</label>
+            <input type="file" id="intro-file-input" accept="video/*" class="w-full border p-2.5 rounded-lg text-sm bg-gray-50">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-700 block mb-2">Or Current Intro Video Public URL</label>
+            <input type="text" id="intro-url-input" class="w-full p-3 border rounded-lg text-sm" placeholder="Paste video URL here...">
+          </div>
+          <button onclick="uploadAndSaveIntroVideo()" id="upload-intro-btn" class="bg-purple-900 text-white px-6 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
+            Upload & Update Video
+          </button>
+          <div id="intro-status-msg" class="text-sm font-semibold mt-2"></div>
+        </div>
+      </section>
+
     </main>
   </div>
 
-  <!-- Add/Edit Modal (Products) -->
+  <!-- Add/Edit Product Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
         <input type="hidden" id="product-id">
+        
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image</label>
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image (Choose File)</label>
           <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
         </div>
+
         <div>
-          <label class="text-xs font-semibold text-gray-600">Product Title</label>
-          <input type="text" id="title" required class="w-full p-2 border rounded-lg text-sm">
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Extra Images (Choose Multiple Pictures)</label>
+          <input type="file" id="product-extra-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
         </div>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-700 block mb-1">Product Video (Optional .mp4)</label>
+          <input type="file" id="product-video-file" accept="video/*" class="w-full border p-2 rounded-lg text-xs">
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Product Title</label>
+            <input type="text" id="title" required class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
+            <select id="category" class="w-full p-2 border rounded-lg text-sm">
+              <option value="Earbuds">Earbuds</option>
+              <option value="Power Banks">Power Banks</option>
+              <option value="Mobile Chargers">Mobile Chargers</option>
+              <option value="Car Chargers">Car Chargers</option>
+              <option value="Handfree">Handfree</option>
+              <option value="Speakers">Speakers</option>
+              <option value="Headphone">Headphone</option>
+              <option value="Neckbands">Neckbands</option>
+              <option value="Battery">Battery</option>
+              <option value="PD Cable">PD Cable</option>
+              <option value="Data Cables">Data Cables</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
           <div>
             <label class="text-xs font-semibold text-gray-600">Price (PKR)</label>
             <input type="number" id="price" required class="w-full p-2 border rounded-lg text-sm">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Category</label>
-            <select id="category" class="w-full p-2 border rounded-lg text-sm">
-              <option value="Earbuds">Earbuds</option>
-              <option value="Power Banks">Power Banks</option>
-              <option value="Mobile Chargers">Mobile Chargers</option>
-              <option value="Speakers">Speakers</option>
-              <option value="Data Cables">Data Cables</option>
-            </select>
+            <label class="text-xs font-semibold text-gray-600">Old Price (Opt)</label>
+            <input type="number" id="old-price" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Rating (e.g 4.9)</label>
+            <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-sm">
           </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Model (Opt)</label>
+            <input type="text" id="model" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600">Color (Opt)</label>
+            <input type="text" id="color" class="w-full p-2 border rounded-lg text-sm">
+          </div>
+        </div>
+
         <div>
           <label class="text-xs font-semibold text-gray-600">Description</label>
           <textarea id="description" rows="2" class="w-full p-2 border rounded-lg text-sm"></textarea>
         </div>
+
         <div class="flex justify-end space-x-2 pt-2">
           <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-200">Cancel</button>
           <button type="submit" id="save-btn" class="px-5 py-2 text-sm rounded-lg bg-purple-900 text-white font-semibold">Save Product</button>
@@ -113,10 +181,12 @@
     const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let allProducts = [];
+    let selectedAdminCategory = 'All';
 
     window.onload = () => {
       loadProducts();
       loadOrders();
+      loadIntroVideoUrl();
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
         .subscribe();
@@ -125,31 +195,167 @@
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
+      document.getElementById('section-intro').classList.toggle('hidden', tab !== 'intro');
+      
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
+      document.getElementById('tab-intro').className = tab === 'intro' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
     }
 
     async function loadProducts() {
       const { data } = await dbClient.from('products').select('*').order('id', { ascending: false });
       allProducts = data || [];
+      renderCategoryFilters();
+      displayProducts();
+    }
+
+    function renderCategoryFilters() {
+      const cats = ['All', 'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 'Handfree', 'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables'];
+      const container = document.getElementById('admin-category-filters');
+      container.innerHTML = cats.map(c => `
+        <button onclick="filterAdminCategory('${c}')" class="px-3 py-1.5 rounded-lg text-xs font-bold ${selectedAdminCategory === c ? 'bg-purple-900 text-white' : 'bg-white text-purple-900 border border-purple-200'}">
+          ${c}
+        </button>
+      `).join('');
+    }
+
+    function filterAdminCategory(cat) {
+      selectedAdminCategory = cat;
+      renderCategoryFilters();
       displayProducts();
     }
 
     function displayProducts() {
       const container = document.getElementById('products-list');
-      if (!allProducts.length) {
-        container.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">No products found.</td></tr>`;
+      let filtered = allProducts;
+      if (selectedAdminCategory !== 'All') {
+        filtered = allProducts.filter(p => p.category?.toLowerCase() === selectedAdminCategory.toLowerCase());
+      }
+
+      if (!filtered.length) {
+        container.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">No products found in this collection.</td></tr>`;
         return;
       }
-      container.innerHTML = allProducts.map(p => `
+
+      container.innerHTML = filtered.map(p => `
         <tr class="border-b hover:bg-gray-50 text-sm">
           <td class="p-4"><img src="${p.image_url || ''}" class="w-12 h-12 object-contain bg-gray-100 rounded"></td>
-          <td class="p-4 font-bold text-gray-800">${p.title}</td>
+          <td class="p-4">
+            <div class="font-bold text-gray-800">${p.title}</div>
+            <div class="text-xs text-gray-500">Model: ${p.model || 'N/A'}</div>
+          </td>
           <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category}</span></td>
           <td class="p-4 font-bold text-purple-950">PKR ${p.price}</td>
-          <td class="p-4"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button></td>
+          <td class="p-4 space-x-2">
+            <button onclick="editProduct(${p.id})" class="text-blue-600 font-semibold hover:underline">Edit</button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button>
+          </td>
         </tr>
       `).join('');
+    }
+
+    async function saveProduct(event) {
+      event.preventDefault();
+      const id = document.getElementById('product-id').value;
+      const title = document.getElementById('title').value.trim();
+      const category = document.getElementById('category').value;
+      const price = parseFloat(document.getElementById('price').value);
+      const oldPrice = document.getElementById('old-price').value ? parseFloat(document.getElementById('old-price').value) : null;
+      const rating = parseFloat(document.getElementById('rating').value) || 4.8;
+      const model = document.getElementById('model').value.trim();
+      const color = document.getElementById('color').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      const imageFile = document.getElementById('product-image').files[0];
+      const extraFiles = document.getElementById('product-extra-images').files;
+      const videoFile = document.getElementById('product-video-file').files[0];
+
+      let imageUrl = '';
+      let imagesList = [];
+      let videoUrl = '';
+
+      if (id) {
+        const existing = allProducts.find(p => p.id == id);
+        imageUrl = existing?.image_url || '';
+        imagesList = existing?.images || [];
+        videoUrl = existing?.video_url || '';
+      }
+
+      // Upload Cover Image
+      if (imageFile) {
+        const fileName = 'prod_' + Date.now() + '_' + imageFile.name;
+        const { error } = await dbClient.storage.from('intro').upload(fileName, imageFile);
+        if (!error) {
+          imageUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
+        }
+      }
+
+      // Upload Extra Images
+      if (extraFiles.length > 0) {
+        for (let i = 0; i < extraFiles.length; i++) {
+          const file = extraFiles[i];
+          const fileName = 'extra_' + Date.now() + '_' + file.name;
+          const { error } = await dbClient.storage.from('intro').upload(fileName, file);
+          if (!error) {
+            imagesList.push(dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl);
+          }
+        }
+      }
+
+      // Upload Product Video
+      if (videoFile) {
+        const fileName = 'vid_' + Date.now() + '_' + videoFile.name;
+        const { error } = await dbClient.storage.from('intro').upload(fileName, videoFile);
+        if (!error) {
+          videoUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
+        }
+      }
+
+      const productData = {
+        title,
+        category,
+        price,
+        old_price: oldPrice,
+        rating,
+        model,
+        color,
+        description,
+        image_url: imageUrl,
+        images: imagesList,
+        video_url: videoUrl
+      };
+
+      if (id) {
+        await dbClient.from('products').update(productData).eq('id', id);
+      } else {
+        await dbClient.from('products').insert([productData]);
+      }
+
+      closeModal();
+      loadProducts();
+    }
+
+    function editProduct(id) {
+      const p = allProducts.find(item => item.id == id);
+      if (!p) return;
+      document.getElementById('product-id').value = p.id;
+      document.getElementById('title').value = p.title || '';
+      document.getElementById('category').value = p.category || 'Earbuds';
+      document.getElementById('price').value = p.price || '';
+      document.getElementById('old-price').value = p.old_price || '';
+      document.getElementById('rating').value = p.rating || 4.8;
+      document.getElementById('model').value = p.model || '';
+      document.getElementById('color').value = p.color || '';
+      document.getElementById('description').value = p.description || '';
+      document.getElementById('modal-title').innerText = 'Edit Product';
+      openModal();
+    }
+
+    async function deleteProduct(id) {
+      if (confirm('Are you sure you want to delete this product?')) {
+        await dbClient.from('products').delete().eq('id', id);
+        loadProducts();
+      }
     }
 
     async function loadOrders() {
@@ -210,21 +416,73 @@
     async function deleteOrder(orderId) {
       if (confirm('Kya aap waqai is order ko delete karna chahte hain?')) {
         const { error } = await dbClient.from('orders').delete().eq('id', orderId);
-        if (!error) {
-          loadOrders();
-        } else {
-          alert('Order delete karne mein koi masla aaya hai.');
-        }
+        if (!error) loadOrders();
       }
     }
 
-    function openModal() { document.getElementById('product-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
-    async function deleteProduct(id) {
-      if(confirm('Delete product?')) {
-        await dbClient.from('products').delete().eq('id', id);
-        loadProducts();
+    // Intro Video Functions
+    async function loadIntroVideoUrl() {
+      try {
+        const { data } = await dbClient.from('settings').select('value').eq('key', 'intro_video').maybeSingle();
+        if (data && data.value) {
+          document.getElementById('intro-url-input').value = data.value;
+        }
+      } catch (e) {
+        console.error('Error loading intro url', e);
       }
+    }
+
+    async function uploadAndSaveIntroVideo() {
+      const fileInput = document.getElementById('intro-file-input');
+      const urlInput = document.getElementById('intro-url-input');
+      const msgBox = document.getElementById('intro-status-msg');
+      const btn = document.getElementById('upload-intro-btn');
+
+      msgBox.innerText = '';
+      let videoUrl = urlInput.value.trim();
+
+      try {
+        if (fileInput.files.length > 0) {
+          btn.innerText = 'Uploading video...';
+          btn.disabled = true;
+          const file = fileInput.files[0];
+          const fileName = 'intro_' + Date.now() + '_' + file.name;
+
+          const { data, error } = await dbClient.storage.from('intro').upload(fileName, file);
+          if (error) throw error;
+
+          const { data: publicUrlData } = dbClient.storage.from('intro').getPublicUrl(fileName);
+          videoUrl = publicUrlData.publicUrl;
+          urlInput.value = videoUrl;
+        }
+
+        if (!videoUrl) throw new Error('Please select a video file or enter a valid URL.');
+
+        btn.innerText = 'Saving...';
+        const { error: dbError } = await dbClient.from('settings').upsert({ key: 'intro_video', value: videoUrl });
+        if (dbError) throw dbError;
+
+        msgBox.className = 'text-sm font-semibold mt-2 text-green-600';
+        msgBox.innerText = 'Intro video uploaded & updated successfully! 🎉';
+        fileInput.value = '';
+      } catch (e) {
+        msgBox.className = 'text-sm font-semibold mt-2 text-red-600';
+        msgBox.innerText = 'Error: ' + e.message;
+      } finally {
+        btn.innerText = 'Upload & Update Video';
+        btn.disabled = false;
+      }
+    }
+
+    function openModal() {
+      document.getElementById('product-form').reset();
+      document.getElementById('product-id').value = '';
+      document.getElementById('modal-title').innerText = 'Add Product';
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('product-modal').classList.add('hidden');
     }
   </script>
 </body>
