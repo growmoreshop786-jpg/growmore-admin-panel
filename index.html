@@ -523,6 +523,8 @@
           itemsHtml = o.items.map(i => `<div class="text-xs text-gray-600">• ${i.title} (x${i.quantity}) - PKR ${i.price}</div>`).join('');
         }
 
+        const customerEmail = o.customer_email ? o.customer_email : 'Not Provided';
+
         return `
           <div class="bg-white p-6 rounded-xl shadow border-l-4 border-purple-900 space-y-3">
             <div class="flex justify-between items-center">
@@ -534,6 +536,8 @@
             </div>
             
             <div class="bg-gray-50 p-3 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+              <div><b>👤 Name:</b> ${o.customer_name}</div>
+              <div><b>✉️ Email:</b> ${customerEmail}</div>
               <div><b>📞 Phone:</b> ${o.customer_phone}</div>
               <div><b>📍 Address:</b> ${o.address}</div>
             </div>
