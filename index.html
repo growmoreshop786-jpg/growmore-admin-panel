@@ -73,10 +73,10 @@
         <p class="text-gray-500 text-sm mb-6">Apne laptop se nayi video file upload karein ya direct URL update karein.</p>
         
         <div class="bg-white p-6 rounded-xl shadow max-w-2xl space-y-4">
-          <!-- Current Intro Video Preview Player -->
-          <div id="intro-preview-container" class="hidden bg-gray-50 p-3 rounded-lg border">
-            <label class="text-xs font-semibold text-gray-700 block mb-2">Current Intro Video Preview</label>
-            <video id="intro-preview-player" src="" controls class="w-full h-48 object-contain bg-black rounded"></video>
+          <!-- Current Intro Video Preview Player (Small Size) -->
+          <div id="intro-preview-container" class="hidden bg-gray-50 p-2.5 rounded-lg border inline-block">
+            <label class="text-xs font-semibold text-gray-700 block mb-1">Current Intro Video</label>
+            <video id="intro-preview-player" src="" controls class="w-32 h-32 object-contain bg-black rounded border"></video>
           </div>
 
           <div>
@@ -236,7 +236,6 @@
     }
 
     function renderCategoryFilters() {
-      // AirPods removed from filters
       const cats = ['All', 'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 'Handfree', 'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables', 'Accessories'];
       const container = document.getElementById('admin-category-filters');
       container.innerHTML = cats.map(c => `
@@ -499,7 +498,7 @@
       }
     }
 
-    // Intro Video Functions with Live Preview Player
+    // Intro Video Functions with Small Preview Player
     async function loadIntroVideoUrl() {
       try {
         const { data } = await dbClient.from('settings').select('value').eq('key', 'intro_video').maybeSingle();
@@ -548,7 +547,7 @@
         msgBox.className = 'text-sm font-semibold mt-2 text-green-600';
         msgBox.innerText = 'Intro video uploaded & updated successfully! 🎉';
         fileInput.value = '';
-        loadIntroVideoUrl(); // Refresh preview player
+        loadIntroVideoUrl();
       } catch (e) {
         msgBox.className = 'text-sm font-semibold mt-2 text-red-600';
         msgBox.innerText = 'Error: ' + e.message;
