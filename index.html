@@ -258,21 +258,30 @@
         return;
       }
 
-      container.innerHTML = filtered.map(p => `
-        <tr class="border-b hover:bg-gray-50 text-sm">
-          <td class="p-4"><img src="${p.image_url || ''}" class="w-12 h-12 object-contain bg-gray-100 rounded"></td>
-          <td class="p-4">
-            <div class="font-bold text-gray-800">${p.title}</div>
-            <div class="text-xs text-gray-500">Model: ${p.model || 'N/A'} | Rating: ⭐ ${p.rating || 4.8}</div>
-          </td>
-          <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category}</span></td>
-          <td class="p-4 font-bold text-purple-950">PKR ${p.price}</td>
-          <td class="p-4 space-x-2">
-            <button onclick="editProduct(${p.id})" class="text-blue-600 font-semibold hover:underline">Edit</button>
-            <button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      container.innerHTML = filtered.map(p => {
+        let oldPriceHtml = p.old_price ? `<div class="text-xs text-gray-400 line-through">Before: PKR ${p.old_price}</div>` : '';
+        let ratingHtml = `<div class="text-xs text-gray-500 mt-0.5">⭐ ${p.rating || 4.8}</div>`;
+
+        return `
+          <tr class="border-b hover:bg-gray-50 text-sm">
+            <td class="p-4"><img src="${p.image_url || ''}" class="w-12 h-12 object-contain bg-gray-100 rounded"></td>
+            <td class="p-4">
+              <div class="font-bold text-gray-800">${p.title}</div>
+              <div class="text-xs text-gray-500">Model: ${p.model || 'N/A'}</div>
+            </td>
+            <td class="p-4"><span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">${p.category}</span></td>
+            <td class="p-4">
+              <div class="font-bold text-purple-950">PKR ${p.price}</div>
+              ${oldPriceHtml}
+              ${ratingHtml}
+            </td>
+            <td class="p-4 space-x-2">
+              <button onclick="editProduct(${p.id})" class="text-blue-600 font-semibold hover:underline">Edit</button>
+              <button onclick="deleteProduct(${p.id})" class="text-red-600 font-semibold hover:underline">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function saveProduct(event) {
@@ -295,7 +304,6 @@
       let imagesList = [...currentExtraImages];
       let videoUrl = currentVideoUrl;
 
-      // Upload New Cover Image
       if (imageFile) {
         const fileName = 'prod_' + Date.now() + '_' + imageFile.name;
         const { error } = await dbClient.storage.from('intro').upload(fileName, imageFile);
@@ -304,7 +312,6 @@
         }
       }
 
-      // Upload Extra Images
       if (extraFiles.length > 0) {
         for (let i = 0; i < extraFiles.length; i++) {
           const file = extraFiles[i];
@@ -316,7 +323,6 @@
         }
       }
 
-      // Upload New Product Video
       if (videoFile) {
         const fileName = 'vid_' + Date.now() + '_' + videoFile.name;
         const { error } = await dbClient.storage.from('intro').upload(fileName, videoFile);
@@ -366,7 +372,6 @@
       currentVideoUrl = p.video_url || '';
       currentExtraImages = p.images || [];
 
-      // Cover Image Preview & Delete option
       const imgContainer = document.getElementById('current-image-container');
       if (currentImageUrl) {
         document.getElementById('image-preview-tag').src = currentImageUrl;
@@ -375,7 +380,6 @@
         imgContainer.classList.add('hidden');
       }
 
-      // Video Preview & Delete option
       const vidContainer = document.getElementById('current-video-container');
       if (currentVideoUrl) {
         document.getElementById('video-preview-tag').src = currentVideoUrl;
@@ -384,7 +388,6 @@
         vidContainer.classList.add('hidden');
       }
 
-      // Extra Images Thumbnails
       renderExtraImagesPreviews();
 
       document.getElementById('modal-title').innerText = 'Edit Product';
