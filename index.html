@@ -221,21 +221,33 @@
     let currentVideoUrl = '';
     let currentExtraImages = [];
 
-    let categoriesList = JSON.parse(localStorage.getItem('admin_categories')) || [
+    let categoriesList = [
       'Earbuds', 'Power Banks', 'Mobile Chargers', 'Car Chargers', 'Handfree', 
       'Speakers', 'Headphone', 'Neckbands', 'Battery', 'PD Cable', 'Data Cables', 'Accessories'
     ];
 
-    window.onload = () => {
+    window.onload = async () => {
+      await loadCategoriesFromSupabase();
       loadProducts();
       loadOrders();
       loadIntroVideoUrl();
-      renderCategoryFilters();
-      renderCategoryDropdown();
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
         .subscribe();
     };
+
+    async function loadCategoriesFromSupabase() {
+      try {
+        const { data } = await dbClient.from('settings').select('value').eq('key', 'categories').maybeSingle();
+        if (data && data.value) {
+          categoriesList = JSON.parse(data.value);
+        }
+      } catch (e) {
+        console.error('Error loading categories from Supabase', e);
+      }
+      renderCategoryFilters();
+      renderCategoryDropdown();
+    }
 
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
@@ -277,12 +289,13 @@
       document.getElementById('category-modal').classList.add('hidden');
     }
 
-    function saveNewCategory(e) {
+    async function saveNewCategory(e) {
       e.preventDefault();
       const name = document.getElementById('new-category-name').value.trim();
       if (name && !categoriesList.includes(name)) {
         categoriesList.push(name);
-        localStorage.setItem('admin_categories', JSON.stringify(categoriesList));
+        // Save to Supabase settings table
+        await dbClient.from('settings').upsert({ key: 'categories', value: JSON.stringify(categoriesList) });
         renderCategoryFilters();
         renderCategoryDropdown();
         filterAdminCategory(name);
