@@ -72,7 +72,7 @@
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-2xl font-bold text-purple-950">Manage Collections & Pictures</h2>
-            <p class="text-gray-500 text-sm">Yahan se aap nayi collection add kar sakte hain, delete kar sakte hain, aur har collection par click karke uski tasveer (picture) upload ya change kar sakte hain.</p>
+            <p class="text-gray-500 text-sm">Yahan se aap nayi collection add kar sakte hain, delete kar sakte hain, aur har collection ki tasveer upload ya change kar sakte hain.</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
             + Add New Collection
@@ -89,7 +89,7 @@
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-2xl font-bold text-purple-950">Manage Multiple Banners (3-5 Sliders)</h2>
-            <p class="text-gray-500 text-sm">Yahan aap 3 se 5 promotional banners add kar sakte hain jo app par 1 by 1 change hote rahenge.</p>
+            <p class="text-gray-500 text-sm">Yahan aap 3 se 5 promotional banners add kar sakte hain jo app par auto-slide honge.</p>
           </div>
           <button onclick="openAddBannerModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
             + Add New Banner
@@ -245,7 +245,7 @@
     </div>
   </div>
 
-  <!-- Add Banner Modal -->
+  <!-- Add/Edit Banner Modal -->
   <div id="banner-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative">
       <h3 id="banner-modal-title" class="text-lg font-bold text-purple-950 mb-3">Add Banner Slider</h3>
@@ -260,7 +260,7 @@
           <input type="text" id="banner-subtitle" required class="w-full p-2 border rounded-lg text-sm">
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Banner Image File</label>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Banner Image File (1080x540 px)</label>
           <input type="file" id="banner-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
         </div>
         <div class="flex justify-end space-x-2 pt-2">
@@ -282,23 +282,8 @@
     let currentVideoUrl = '';
     let currentExtraImages = [];
 
-    let collectionsList = [
-      { name: 'Earbuds', image: '' },
-      { name: 'Power Banks', image: '' },
-      { name: 'Mobile Chargers', image: '' },
-      { name: 'Car Chargers', image: '' },
-      { name: 'Handfree', image: '' },
-      { name: 'Speakers', image: '' },
-      { name: 'Headphone', image: '' },
-      { name: 'Neckbands', image: '' },
-      { name: 'Battery', image: '' },
-      { name: 'PD Cable', image: '' },
-      { name: 'Data Cables', image: '' }
-    ];
-
-    let bannersList = [
-      { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
-    ];
+    let collectionsList = [];
+    let bannersList = [];
 
     window.onload = async () => {
       await loadCollectionsFromSupabase();
@@ -322,6 +307,20 @@
           } else {
             collectionsList = parsed;
           }
+        } else {
+          collectionsList = [
+            { name: 'Earbuds', image: '' },
+            { name: 'Power Banks', image: '' },
+            { name: 'Mobile Chargers', image: '' },
+            { name: 'Car Chargers', image: '' },
+            { name: 'Handfree', image: '' },
+            { name: 'Speakers', image: '' },
+            { name: 'Headphone', image: '' },
+            { name: 'Neckbands', image: '' },
+            { name: 'Battery', image: '' },
+            { name: 'PD Cable', image: '' },
+            { name: 'Data Cables', image: '' }
+          ];
         }
       } catch (e) {
         console.error('Error loading collections', e);
@@ -336,9 +335,16 @@
         const { data } = await dbClient.from('settings').select('value').eq('key', 'app_banners').maybeSingle();
         if (data && data.value) {
           bannersList = JSON.parse(data.value);
+        } else {
+          bannersList = [
+            { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
+          ];
         }
       } catch (e) {
         console.error('Error loading banners', e);
+        bannersList = [
+          { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
+        ];
       }
       renderBannersAdminList();
     }
@@ -381,7 +387,6 @@
       select.innerHTML = collectionsList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     }
 
-    // Yeh function admin panel mein collection ki list aur pic upload karne ka box dikhata hai
     function renderCollectionsAdminGrid() {
       const grid = document.getElementById('collections-grid');
       grid.innerHTML = collectionsList.map((c, index) => `
@@ -404,16 +409,25 @@
       const file = event.target.files[0];
       if (!file) return;
       const fileName = 'col_' + Date.now() + '_' + file.name;
-      const { error } = await dbClient.storage.from('intro').upload(fileName, file);
-      if (!error) {
-        const publicUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
-        collectionsList[index].image = publicUrl;
-        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+      const { error: uploadError } = await dbClient.storage.from('intro').upload(fileName, file);
+      if (uploadError) {
+        alert('Error uploading image: ' + uploadError.message);
+        return;
+      }
+      const publicUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
+      collectionsList[index].image = publicUrl;
+
+      const { error: dbError } = await dbClient.from('settings').upsert(
+        { key: 'collections', value: JSON.stringify(collectionsList) },
+        { onConflict: 'key' }
+      );
+
+      if (dbError) {
+        alert('Error saving to database: ' + dbError.message);
+      } else {
         renderCollectionsAdminGrid();
         renderCategoryFilters();
-        alert('Collection picture updated successfully! ✅');
-      } else {
-        alert('Error uploading image: ' + error.message);
+        alert('Collection picture uploaded & saved successfully! ✅');
       }
     }
 
@@ -443,7 +457,10 @@
 
       if (name && !collectionsList.some(c => c.name.toLowerCase() === name.toLowerCase())) {
         collectionsList.push({ name, image: imageUrl });
-        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+        await dbClient.from('settings').upsert(
+          { key: 'collections', value: JSON.stringify(collectionsList) },
+          { onConflict: 'key' }
+        );
         renderCategoryFilters();
         renderCategoryDropdown();
         renderCollectionsAdminGrid();
@@ -455,7 +472,10 @@
       const catName = collectionsList[index].name;
       if (confirm(`Kya aap waqai collection "${catName}" ko delete karna chahte hain?`)) {
         collectionsList.splice(index, 1);
-        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+        await dbClient.from('settings').upsert(
+          { key: 'collections', value: JSON.stringify(collectionsList) },
+          { onConflict: 'key' }
+        );
         if (selectedAdminCategory === catName) {
           selectedAdminCategory = 'All';
         }
@@ -472,14 +492,14 @@
       displayProducts();
     }
 
-    // Banners management (3-5 banners slider)
+    // MULTIPLE BANNERS MANAGEMENT (3-5 BANNERS SLIDER)
     function renderBannersAdminList() {
       const container = document.getElementById('banners-list-container');
       container.innerHTML = bannersList.map((b, idx) => `
         <div class="bg-white p-4 rounded-xl shadow border space-y-2">
           <div class="h-32 bg-gray-100 rounded overflow-hidden relative">
             ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Banner Image</div>`}
-            <span class="absolute top-2 left-2 bg-purple-900 text-white text-xs px-2 py-0.5 rounded font-bold">Slider #${idx + 1}</span>
+            <span class="absolute top-2 left-2 bg-purple-900 text-white text-xs px-2 py-0.5 rounded font-bold">Banner Slider #${idx + 1}</span>
           </div>
           <div class="font-bold text-gray-800">${b.title}</div>
           <div class="text-xs text-gray-500">${b.subtitle}</div>
@@ -543,7 +563,11 @@
         bannersList.push(bannerObj);
       }
 
-      await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
+      await dbClient.from('settings').upsert(
+        { key: 'app_banners', value: JSON.stringify(bannersList) },
+        { onConflict: 'key' }
+      );
+      
       closeBannerModal();
       renderBannersAdminList();
       alert('Banner saved successfully! ✅');
@@ -556,7 +580,10 @@
       }
       if (confirm('Kya aap waqai is banner ko delete karna chahte hain?')) {
         bannersList.splice(idx, 1);
-        await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
+        await dbClient.from('settings').upsert(
+          { key: 'app_banners', value: JSON.stringify(bannersList) },
+          { onConflict: 'key' }
+        );
         renderBannersAdminList();
       }
     }
