@@ -23,7 +23,7 @@
         🏷️ Collections & Pictures
       </button>
       <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-        🖼️ Banner Sliders (3-5)
+        🖼️ Manage 3 Banners (1-Click Upload)
       </button>
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🛒 Live Orders & Details
@@ -84,20 +84,60 @@
         </div>
       </section>
 
-      <!-- Banner Sliders Section (3-5 Banners) -->
+      <!-- Banner Sliders Section (Upload 3 Banners at Once) -->
       <section id="section-banners" class="hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h2 class="text-2xl font-bold text-purple-950">Manage Multiple Banners (3-5 Sliders)</h2>
-            <p class="text-gray-500 text-sm">Yahan aap 3 se 5 promotional banners add kar sakte hain jo app par 1 by 1 change hote rahenge.</p>
-          </div>
-          <button onclick="openAddBannerModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
-            + Add New Banner
-          </button>
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-purple-950">Upload All 3 App Banners (1-Click)</h2>
+          <p class="text-gray-500 text-sm">Yahan aap aik hi waqt mein 3o banners ki pictures aur details set karke "Save All 3 Banners" ka button daba dein.</p>
         </div>
 
-        <div id="banners-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Rendered dynamically -->
+        <div class="bg-white p-6 rounded-2xl shadow-md max-w-3xl space-y-6">
+          <form onsubmit="saveAllThreeBanners(event)" class="space-y-6">
+            
+            <!-- Banner 1 -->
+            <div class="p-4 border rounded-xl bg-purple-50/50 space-y-3">
+              <h3 class="font-bold text-purple-900 text-sm">Banner #1</h3>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="b1-title" placeholder="Title (e.g. Mega Sale)" required class="p-2 border rounded text-sm bg-white">
+                <input type="text" id="b1-subtitle" placeholder="Subtitle" required class="p-2 border rounded text-sm bg-white">
+              </div>
+              <div>
+                <label class="text-xs text-gray-600 block mb-1">Banner 1 Picture (1080x540 px)</label>
+                <input type="file" id="b1-file" accept="image/*" class="w-full text-xs border p-2 rounded bg-white">
+              </div>
+              <div id="b1-preview" class="w-24 h-12 object-cover rounded hidden border"></div>
+            </div>
+
+            <!-- Banner 2 -->
+            <div class="p-4 border rounded-xl bg-purple-50/50 space-y-3">
+              <h3 class="font-bold text-purple-900 text-sm">Banner #2</h3>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="b2-title" placeholder="Title (e.g. New Earbuds)" required class="p-2 border rounded text-sm bg-white">
+                <input type="text" id="b2-subtitle" placeholder="Subtitle" required class="p-2 border rounded text-sm bg-white">
+              </div>
+              <div>
+                <label class="text-xs text-gray-600 block mb-1">Banner 2 Picture (1080x540 px)</label>
+                <input type="file" id="b2-file" accept="image/*" class="w-full text-xs border p-2 rounded bg-white">
+              </div>
+            </div>
+
+            <!-- Banner 3 -->
+            <div class="p-4 border rounded-xl bg-purple-50/50 space-y-3">
+              <h3 class="font-bold text-purple-900 text-sm">Banner #3</h3>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="b3-title" placeholder="Title (e.g. Free Delivery)" required class="p-2 border rounded text-sm bg-white">
+                <input type="text" id="b3-subtitle" placeholder="Subtitle" required class="p-2 border rounded text-sm bg-white">
+              </div>
+              <div>
+                <label class="text-xs text-gray-600 block mb-1">Banner 3 Picture (1080x540 px)</label>
+                <input type="file" id="b3-file" accept="image/*" class="w-full text-xs border p-2 rounded bg-white">
+              </div>
+            </div>
+
+            <button type="submit" id="save-banners-btn" class="w-full bg-purple-900 text-white py-3 rounded-xl font-bold hover:bg-purple-800 text-sm shadow">
+              💾 Save All 3 Banners Now
+            </button>
+          </form>
         </div>
       </section>
 
@@ -245,32 +285,6 @@
     </div>
   </div>
 
-  <!-- Add Banner Modal -->
-  <div id="banner-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative">
-      <h3 id="banner-modal-title" class="text-lg font-bold text-purple-950 mb-3">Add Banner Slider</h3>
-      <form onsubmit="saveBanner(event)" class="space-y-3">
-        <input type="hidden" id="banner-index">
-        <div>
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Banner Title (e.g SALE)</label>
-          <input type="text" id="banner-title" required class="w-full p-2 border rounded-lg text-sm">
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Banner Subtitle / Description</label>
-          <input type="text" id="banner-subtitle" required class="w-full p-2 border rounded-lg text-sm">
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Banner Image File</label>
-          <input type="file" id="banner-image-file" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeBannerModal()" class="px-3 py-1.5 text-xs rounded-lg bg-gray-200">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 text-xs rounded-lg bg-purple-900 text-white font-semibold">Save Banner</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
     const SUPABASE_URL = 'https://kynzggetoskcafgxjlgi.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_R-obr5pUe_3_Lq9-7-LoRg_f6vMv8Sl';
@@ -296,9 +310,7 @@
       { name: 'Data Cables', image: '' }
     ];
 
-    let bannersList = [
-      { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
-    ];
+    let existingBanners = [];
 
     window.onload = async () => {
       await loadCollectionsFromSupabase();
@@ -335,12 +347,75 @@
       try {
         const { data } = await dbClient.from('settings').select('value').eq('key', 'app_banners').maybeSingle();
         if (data && data.value) {
-          bannersList = JSON.parse(data.value);
+          existingBanners = JSON.parse(data.value);
+          if (existingBanners[0]) {
+            document.getElementById('b1-title').value = existingBanners[0].title || '';
+            document.getElementById('b1-subtitle').value = existingBanners[0].subtitle || '';
+          }
+          if (existingBanners[1]) {
+            document.getElementById('b2-title').value = existingBanners[1].title || '';
+            document.getElementById('b2-subtitle').value = existingBanners[1].subtitle || '';
+          }
+          if (existingBanners[2]) {
+            document.getElementById('b3-title').value = existingBanners[2].title || '';
+            document.getElementById('b3-subtitle').value = existingBanners[2].subtitle || '';
+          }
         }
       } catch (e) {
         console.error('Error loading banners', e);
       }
-      renderBannersAdminList();
+    }
+
+    async function saveAllThreeBanners(e) {
+      e.preventDefault();
+      const btn = document.getElementById('save-banners-btn');
+      btn.innerText = 'Uploading 3 Banners...';
+      btn.disabled = true;
+
+      let b1Img = existingBanners[0]?.image || '';
+      let b2Img = existingBanners[1]?.image || '';
+      let b3Img = existingBanners[2]?.image || '';
+
+      const f1 = document.getElementById('b1-file').files[0];
+      const f2 = document.getElementById('b2-file').files[0];
+      const f3 = document.getElementById('b3-file').files[0];
+
+      if (f1) {
+        const name1 = 'b1_' + Date.now() + '_' + f1.name;
+        await dbClient.storage.from('intro').upload(name1, f1);
+        b1Img = dbClient.storage.from('intro').getPublicUrl(name1).data.publicUrl;
+      }
+      if (f2) {
+        const name2 = 'b2_' + Date.now() + '_' + f2.name;
+        await dbClient.storage.from('intro').upload(name2, f2);
+        b2Img = dbClient.storage.from('intro').getPublicUrl(name2).data.publicUrl;
+      }
+      if (f3) {
+        const name3 = 'b3_' + Date.now() + '_' + f3.name;
+        await dbClient.storage.from('intro').upload(name3, f3);
+        b3Img = dbClient.storage.from('intro').getPublicUrl(name3).data.publicUrl;
+      }
+
+      const newBannersList = [
+        { title: document.getElementById('b1-title').value, subtitle: document.getElementById('b1-subtitle').value, image: b1Img },
+        { title: document.getElementById('b2-title').value, subtitle: document.getElementById('b2-subtitle').value, image: b2Img },
+        { title: document.getElementById('b3-title').value, subtitle: document.getElementById('b3-subtitle').value, image: b3Img }
+      ];
+
+      const { error } = await dbClient.from('settings').upsert(
+        { key: 'app_banners', value: JSON.stringify(newBannersList) },
+        { onConflict: 'key' }
+      );
+
+      btn.innerText = '💾 Save All 3 Banners Now';
+      btn.disabled = false;
+
+      if (error) {
+        alert('Error saving banners: ' + error.message);
+      } else {
+        existingBanners = newBannersList;
+        alert('All 3 Banners uploaded & saved successfully! ✅');
+      }
     }
 
     function switchTab(tab) {
@@ -381,7 +456,6 @@
       select.innerHTML = collectionsList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     }
 
-    // Yeh function admin panel mein collection ki list aur pic upload karne ka box dikhata hai
     function renderCollectionsAdminGrid() {
       const grid = document.getElementById('collections-grid');
       grid.innerHTML = collectionsList.map((c, index) => `
@@ -470,95 +544,6 @@
       selectedAdminCategory = cat;
       renderCategoryFilters();
       displayProducts();
-    }
-
-    // Banners management (3-5 banners slider)
-    function renderBannersAdminList() {
-      const container = document.getElementById('banners-list-container');
-      container.innerHTML = bannersList.map((b, idx) => `
-        <div class="bg-white p-4 rounded-xl shadow border space-y-2">
-          <div class="h-32 bg-gray-100 rounded overflow-hidden relative">
-            ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Banner Image</div>`}
-            <span class="absolute top-2 left-2 bg-purple-900 text-white text-xs px-2 py-0.5 rounded font-bold">Slider #${idx + 1}</span>
-          </div>
-          <div class="font-bold text-gray-800">${b.title}</div>
-          <div class="text-xs text-gray-500">${b.subtitle}</div>
-          <div class="flex justify-end space-x-2 pt-2 border-t">
-            <button onclick="openEditBannerModal(${idx})" class="text-blue-600 text-xs font-bold hover:underline">Edit</button>
-            <button onclick="deleteBanner(${idx})" class="text-red-600 text-xs font-bold hover:underline">Delete</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function openAddBannerModal() {
-      if (bannersList.length >= 5) {
-        alert('Aap maximum 5 banners add kar sakte hain!');
-        return;
-      }
-      document.getElementById('banner-index').value = '';
-      document.getElementById('banner-title').value = '';
-      document.getElementById('banner-subtitle').value = '';
-      document.getElementById('banner-image-file').value = '';
-      document.getElementById('banner-modal-title').innerText = 'Add Banner Slider';
-      document.getElementById('banner-modal').classList.remove('hidden');
-    }
-
-    function openEditBannerModal(idx) {
-      const b = bannersList[idx];
-      document.getElementById('banner-index').value = idx;
-      document.getElementById('banner-title').value = b.title;
-      document.getElementById('banner-subtitle').value = b.subtitle;
-      document.getElementById('banner-image-file').value = '';
-      document.getElementById('banner-modal-title').innerText = 'Edit Banner Slider';
-      document.getElementById('banner-modal').classList.remove('hidden');
-    }
-
-    function closeBannerModal() {
-      document.getElementById('banner-modal').classList.add('hidden');
-    }
-
-    async function saveBanner(e) {
-      e.preventDefault();
-      const idx = document.getElementById('banner-index').value;
-      const title = document.getElementById('banner-title').value.trim();
-      const subtitle = document.getElementById('banner-subtitle').value.trim();
-      const imageFile = document.getElementById('banner-image-file').files[0];
-
-      let imageUrl = idx !== '' ? bannersList[idx].image : '';
-
-      if (imageFile) {
-        const fileName = 'banner_' + Date.now() + '_' + imageFile.name;
-        const { error } = await dbClient.storage.from('intro').upload(fileName, imageFile);
-        if (!error) {
-          imageUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
-        }
-      }
-
-      const bannerObj = { title, subtitle, image: imageUrl };
-
-      if (idx !== '') {
-        bannersList[idx] = bannerObj;
-      } else {
-        bannersList.push(bannerObj);
-      }
-
-      await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
-      closeBannerModal();
-      renderBannersAdminList();
-      alert('Banner saved successfully! ✅');
-    }
-
-    async function deleteBanner(idx) {
-      if (bannersList.length <= 1) {
-        alert('Kam az kam 1 banner hona zaroori hai!');
-        return;
-      }
-      if (confirm('Kya aap waqai is banner ko delete karna chahte hain?')) {
-        bannersList.splice(idx, 1);
-        await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
-        renderBannersAdminList();
-      }
     }
 
     function displayProducts() {
