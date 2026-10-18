@@ -20,7 +20,7 @@
         📦 Products Catalog
       </button>
       <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-        🏷️ Collections & Images
+        🏷️ Collections & Pictures
       </button>
       <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🖼️ Banner Sliders (3-5)
@@ -67,12 +67,12 @@
         </div>
       </section>
 
-      <!-- Collections & Images Section -->
+      <!-- Collections & Pictures Section -->
       <section id="section-collections" class="hidden">
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-2xl font-bold text-purple-950">Manage Collections & Pictures</h2>
-            <p class="text-gray-500 text-sm">Har collection ke liye tasveer set karein taake customer ko wazih nazar aaye.</p>
+            <p class="text-gray-500 text-sm">Yahan se aap nayi collection add kar sakte hain, delete kar sakte hain, aur har collection par click karke uski tasveer (picture) upload ya change kar sakte hain.</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
             + Add New Collection
@@ -282,7 +282,6 @@
     let currentVideoUrl = '';
     let currentExtraImages = [];
 
-    // Collections structure: [{ name: 'Earbuds', image: 'url' }, ...]
     let collectionsList = [
       { name: 'Earbuds', image: '' },
       { name: 'Power Banks', image: '' },
@@ -297,7 +296,6 @@
       { name: 'Data Cables', image: '' }
     ];
 
-    // Banners list for slider (3-5 banners)
     let bannersList = [
       { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
     ];
@@ -319,7 +317,6 @@
         const { data } = await dbClient.from('settings').select('value').eq('key', 'collections').maybeSingle();
         if (data && data.value) {
           const parsed = JSON.parse(data.value);
-          // Handle old string array format or new object array format
           if (parsed.length > 0 && typeof parsed[0] === 'string') {
             collectionsList = parsed.map(name => ({ name, image: '' }));
           } else {
@@ -384,20 +381,21 @@
       select.innerHTML = collectionsList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     }
 
+    // Yeh function admin panel mein collection ki list aur pic upload karne ka box dikhata hai
     function renderCollectionsAdminGrid() {
       const grid = document.getElementById('collections-grid');
       grid.innerHTML = collectionsList.map((c, index) => `
         <div class="bg-white p-4 rounded-xl shadow border border-purple-100 flex items-center space-x-4">
           <div class="w-16 h-16 rounded-full bg-purple-50 border flex items-center justify-center overflow-hidden flex-shrink-0">
-            ${c.image ? `<img src="${c.image}" class="w-full h-full object-cover">` : `<span class="text-xs text-purple-900 font-bold">No Pic</span>`}
+            ${c.image ? `<img src="${c.image}" class="w-full h-full object-cover">` : `<span class="text-[10px] text-purple-900 font-bold text-center px-1">No Pic</span>`}
           </div>
           <div class="flex-1 min-w-0">
             <h4 class="font-bold text-purple-950 text-base truncate">${c.name}</h4>
-            <label class="text-xs text-blue-600 font-semibold cursor-pointer hover:underline mt-1 inline-block">
-              📷 Upload Image <input type="file" accept="image/*" class="hidden" onchange="uploadCollectionImage(event, ${index})">
+            <label class="text-xs text-blue-600 font-semibold cursor-pointer hover:underline mt-1 inline-block bg-blue-50 px-2 py-1 rounded border border-blue-200">
+              📷 Upload / Change Pic <input type="file" accept="image/*" class="hidden" onchange="uploadCollectionImage(event, ${index})">
             </label>
           </div>
-          <button onclick="deleteCategory(${index})" class="text-red-500 hover:text-red-700 font-bold p-2">🗑️</button>
+          <button onclick="deleteCategory(${index})" class="text-red-500 hover:text-red-700 font-bold p-2 text-sm bg-red-50 rounded-lg">🗑️ Delete</button>
         </div>
       `).join('');
     }
@@ -405,7 +403,7 @@
     async function uploadCollectionImage(event, index) {
       const file = event.target.files[0];
       if (!file) return;
-      const fileName = 'col_' + Date.now + '_' + file.name;
+      const fileName = 'col_' + Date.now() + '_' + file.name;
       const { error } = await dbClient.storage.from('intro').upload(fileName, file);
       if (!error) {
         const publicUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
@@ -413,6 +411,9 @@
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
         renderCategoryFilters();
+        alert('Collection picture updated successfully! ✅');
+      } else {
+        alert('Error uploading image: ' + error.message);
       }
     }
 
@@ -545,6 +546,7 @@
       await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
       closeBannerModal();
       renderBannersAdminList();
+      alert('Banner saved successfully! ✅');
     }
 
     async function deleteBanner(idx) {
