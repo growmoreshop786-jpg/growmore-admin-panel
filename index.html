@@ -28,9 +28,6 @@
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🛒 Live Orders & Details
       </button>
-      <button onclick="switchTab('intro')" id="tab-intro" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-        🎥 Intro Video Settings
-      </button>
     </aside>
 
     <main class="flex-1 p-8">
@@ -73,7 +70,7 @@
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-2xl font-bold text-purple-950">Manage Collections & Pictures</h2>
-            <p class="text-gray-500 text-sm">Yahan se aap nayi collection add kar sakte hain, delete kar sakte hain, aur har collection par click karke uski tasveer (picture) upload ya change kar sakte hain.</p>
+            <p class="text-gray-500 text-sm">Yahan سے آپ نئی collection add کر سکتے ہیں، delete کر سکتے ہیں، اور ہر collection پر کلک کر کے اس کی تصویر (picture) upload یا change کر سکتے ہیں۔</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
             + Add New Collection
@@ -90,7 +87,7 @@
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-2xl font-bold text-purple-950">Manage Multiple Banners (3-5 Sliders)</h2>
-            <p class="text-gray-500 text-sm">Yahan aap 3 se 5 promotional banners add kar sakte hain jo app par 1 by 1 change hote rahenge.</p>
+            <p class="text-gray-500 text-sm">Yahan آپ 3 سے 5 promotional banners add کر سکتے ہیں جو app پر 1 by 1 change ہوتے رہیں گے۔</p>
           </div>
           <button onclick="openAddBannerModal()" class="bg-purple-900 text-white px-5 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
             + Add New Banner
@@ -108,32 +105,6 @@
         <p class="text-gray-500 text-sm mb-6">Manage shipping status, view complete customer delivery info, or delete old orders.</p>
         <div id="orders-list" class="space-y-4">
           <p class="text-gray-500">Loading orders...</p>
-        </div>
-      </section>
-
-      <!-- Intro Video Manager Section -->
-      <section id="section-intro" class="hidden">
-        <h2 class="text-2xl font-bold text-purple-950 mb-2">Manage App Intro Video</h2>
-        <p class="text-gray-500 text-sm mb-6">Apne laptop se nayi video file upload karein ya direct URL update karein.</p>
-        
-        <div class="bg-white p-6 rounded-xl shadow max-w-2xl space-y-4">
-          <div id="intro-preview-container" class="hidden bg-gray-50 p-2.5 rounded-lg border inline-block">
-            <label class="text-xs font-semibold text-gray-700 block mb-1">Current Intro Video</label>
-            <video id="intro-preview-player" src="" controls class="w-32 h-32 object-contain bg-black rounded border"></video>
-          </div>
-
-          <div>
-            <label class="text-xs font-semibold text-gray-700 block mb-2">Upload Video from Laptop</label>
-            <input type="file" id="intro-file-input" accept="video/*" class="w-full border p-2.5 rounded-lg text-sm bg-gray-50">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-gray-700 block mb-2">Or Current Intro Video Public URL</label>
-            <input type="text" id="intro-url-input" class="w-full p-3 border rounded-lg text-sm" placeholder="Paste video URL here...">
-          </div>
-          <button onclick="uploadAndSaveIntroVideo()" id="upload-intro-btn" class="bg-purple-900 text-white px-6 py-2.5 rounded-lg hover:bg-purple-800 font-semibold text-sm">
-            Upload & Update Video
-          </button>
-          <div id="intro-status-msg" class="text-sm font-semibold mt-2"></div>
         </div>
       </section>
 
@@ -315,7 +286,6 @@
       await loadBannersFromSupabase();
       loadProducts();
       loadOrders();
-      loadIntroVideoUrl();
 
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
@@ -358,13 +328,11 @@
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
       document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
-      document.getElementById('section-intro').classList.toggle('hidden', tab !== 'intro');
       
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-collections').className = tab === 'collections' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-banners').className = tab === 'banners' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
-      document.getElementById('tab-intro').className = tab === 'intro' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
     }
 
     async function loadProducts() {
@@ -822,7 +790,6 @@
       }).join('');
     }
 
-    // UPDATED FUNCTION: Status change hone par orders table update hogi aur notifications table mein entry bhi jayegi!
     async function updateOrderStatus(orderId, newStatus) {
       const { data: orderData, error: fetchError } = await dbClient
         .from('orders')
@@ -861,64 +828,6 @@
       if (confirm('Kya aap waqai is order ko delete karna chahte hain?')) {
         const { error } = await dbClient.from('orders').delete().eq('id', orderId);
         if (!error) loadOrders();
-      }
-    }
-
-    async function loadIntroVideoUrl() {
-      try {
-        const { data } = await dbClient.from('settings').select('value').eq('key', 'intro_video').maybeSingle();
-        if (data && data.value) {
-          document.getElementById('intro-url-input').value = data.value;
-          const previewPlayer = document.getElementById('intro-preview-player');
-          const previewContainer = document.getElementById('intro-preview-container');
-          previewPlayer.src = data.value;
-          previewContainer.classList.remove('hidden');
-        }
-      } catch (e) {
-        console.error('Error loading intro url', e);
-      }
-    }
-
-    async function uploadAndSaveIntroVideo() {
-      const fileInput = document.getElementById('intro-file-input');
-      const urlInput = document.getElementById('intro-url-input');
-      const msgBox = document.getElementById('intro-status-msg');
-      const btn = document.getElementById('upload-intro-btn');
-
-      msgBox.innerText = '';
-      let videoUrl = urlInput.value.trim();
-
-      try {
-        if (fileInput.files.length > 0) {
-          btn.innerText = 'Uploading video...';
-          btn.disabled = true;
-          const file = fileInput.files[0];
-          const fileName = 'intro_' + Date.now() + '_' + file.name;
-
-          const { data, error } = await dbClient.storage.from('intro').upload(fileName, file);
-          if (error) throw error;
-
-          const { data: publicUrlData } = dbClient.storage.from('intro').getPublicUrl(fileName);
-          videoUrl = publicUrlData.publicUrl;
-          urlInput.value = videoUrl;
-        }
-
-        if (!videoUrl) throw new Error('Please select a video file or enter a valid URL.');
-
-        btn.innerText = 'Saving...';
-        const { error: dbError } = await dbClient.from('settings').upsert({ key: 'intro_video', value: videoUrl });
-        if (dbError) throw dbError;
-
-        msgBox.className = 'text-sm font-semibold mt-2 text-green-600';
-        msgBox.innerText = 'Intro video uploaded & updated successfully! 🎉';
-        fileInput.value = '';
-        loadIntroVideoUrl();
-      } catch (e) {
-        msgBox.className = 'text-sm font-semibold mt-2 text-red-600';
-        msgBox.innerText = 'Error: ' + e.message;
-      } finally {
-        btn.innerText = 'Upload & Update Video';
-        btn.disabled = false;
       }
     }
 
