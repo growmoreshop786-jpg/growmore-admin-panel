@@ -11,13 +11,7 @@
 
   <header class="bg-purple-950 text-white p-4 shadow-md flex justify-between items-center">
     <h1 class="text-xl font-bold">GrowMore Store - Web Control Panel</h1>
-    <div class="flex items-center space-x-3">
-      <div class="flex items-center space-x-1.5 bg-purple-900 px-3 py-1 rounded-full">
-        <span class="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
-        <span class="text-xs font-semibold text-purple-200">Live Sync Active</span>
-      </div>
-      <span class="bg-purple-800 text-xs px-3 py-1 rounded-full">Live Dashboard</span>
-    </div>
+    <span class="bg-purple-800 text-xs px-3 py-1 rounded-full">Live Dashboard</span>
   </header>
 
   <div class="flex min-h-screen">
@@ -33,9 +27,6 @@
       </button>
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🛒 Live Orders & Details
-      </button>
-      <button onclick="switchTab('accounts')" id="tab-accounts" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-        👥 Registered Accounts
       </button>
       <button onclick="switchTab('intro')" id="tab-intro" class="w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
         🎥 Intro Video Settings
@@ -117,34 +108,6 @@
         <p class="text-gray-500 text-sm mb-6">Manage shipping status, view complete customer delivery info, or delete old orders.</p>
         <div id="orders-list" class="space-y-4">
           <p class="text-gray-500">Loading orders...</p>
-        </div>
-      </section>
-
-      <!-- Accounts / Users Section -->
-      <section id="section-accounts" class="hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h2 class="text-2xl font-bold text-purple-950">Registered App Accounts</h2>
-            <p class="text-gray-500 text-sm">Jab bhi koi user mobile app par naya account banayega, uska sara data yahan live show hoga.</p>
-          </div>
-          <button onclick="loadUsersAccounts()" class="bg-purple-900 text-white px-4 py-2 rounded-lg hover:bg-purple-800 font-semibold text-sm">
-            Refresh Users 🔄
-          </button>
-        </div>
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-purple-50 border-b border-purple-100">
-              <tr>
-                <th class="p-4 text-xs font-bold text-purple-900 uppercase">#</th>
-                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Full Name</th>
-                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Email Address</th>
-                <th class="p-4 text-xs font-bold text-purple-900 uppercase">Signup Date & Time</th>
-              </tr>
-            </thead>
-            <tbody id="users-table-body">
-              <tr><td colspan="4" class="p-6 text-center text-gray-500">Loading registered users...</td></tr>
-            </tbody>
-          </table>
         </div>
       </section>
 
@@ -352,17 +315,10 @@
       await loadBannersFromSupabase();
       loadProducts();
       loadOrders();
-      loadUsersAccounts();
       loadIntroVideoUrl();
 
-      // Realtime listener for Orders
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
-        .subscribe();
-
-      // Realtime listener for User Profiles / Accounts
-      dbClient.channel('public:profiles')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => loadUsersAccounts())
         .subscribe();
     };
 
@@ -402,14 +358,12 @@
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
       document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
-      document.getElementById('section-accounts').classList.toggle('hidden', tab !== 'accounts');
       document.getElementById('section-intro').classList.toggle('hidden', tab !== 'intro');
       
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-collections').className = tab === 'collections' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-banners').className = tab === 'banners' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
-      document.getElementById('tab-accounts').className = tab === 'accounts' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
       document.getElementById('tab-intro').className = tab === 'intro' ? 'w-full text-left p-3 rounded-lg font-bold bg-purple-100 text-purple-900' : 'w-full text-left p-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100';
     }
 
@@ -417,34 +371,6 @@
       const { data } = await dbClient.from('products').select('*').order('id', { ascending: false });
       allProducts = data || [];
       displayProducts();
-    }
-
-    async function loadUsersAccounts() {
-      const tbody = document.getElementById('users-table-body');
-      try {
-        const { data, error } = await dbClient.from('profiles').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500">Koi registered account nahi mila.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = data.map((user, index) => {
-          const formattedDate = user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A';
-          return `
-            <tr class="border-b hover:bg-gray-50 text-sm">
-              <td class="p-4 font-mono text-xs text-gray-500">#${index + 1}</td>
-              <td class="p-4 font-bold text-purple-950">${user.full_name || 'N/A'}</td>
-              <td class="p-4 text-gray-700">${user.email || 'N/A'}</td>
-              <td class="p-4 text-gray-500 text-xs">${formattedDate}</td>
-            </tr>
-          `;
-        }).join('');
-      } catch (err) {
-        console.error('Error loading users:', err);
-        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-500">Error loading accounts.</td></tr>`;
-      }
     }
 
     function renderCategoryFilters() {
@@ -896,9 +822,39 @@
       }).join('');
     }
 
+    // UPDATED FUNCTION: Status change hone par orders table update hogi aur notifications table mein entry bhi jayegi!
     async function updateOrderStatus(orderId, newStatus) {
-      await dbClient.from('orders').update({ status: newStatus }).eq('id', orderId);
+      const { data: orderData, error: fetchError } = await dbClient
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle();
+
+      if (fetchError || !orderData) {
+        alert('Order fetch karne mein masla aaya!');
+        return;
+      }
+
+      const { error: updateError } = await dbClient
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (updateError) {
+        alert('Status update nahi ho saka: ' + updateError.message);
+        return;
+      }
+
+      if (orderData.user_id) {
+        await dbClient.from('notifications').insert({
+          'user_id': orderData.user_id,
+          'title': 'Order Status Updated',
+          'message': `Aapke order #${orderId} ka status change ho kar "${newStatus}" ho gaya hai.`
+        });
+      }
+
       loadOrders();
+      alert(`Order #${orderId} ka status "${newStatus}" update ho gaya aur notification bhi bhej di gayi hai! ✅`);
     }
 
     async function deleteOrder(orderId) {
