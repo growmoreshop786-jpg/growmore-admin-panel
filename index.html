@@ -59,7 +59,7 @@
         </div>
       </div>
 
-      <!-- Target Monthly Sale Widget (Editable) -->
+      <!-- Target Monthly Sale Widget -->
       <div class="bg-purple-950 text-white p-4 rounded-2xl space-y-2 shadow-sm mt-8">
         <div class="flex justify-between items-center text-xs font-bold">
           <span>Target Monthly Sale</span>
@@ -78,7 +78,7 @@
     <!-- Main Content Area -->
     <main class="flex-1 p-6 space-y-6 overflow-y-auto">
       
-      <!-- Top Analytics Summary Cards (Real Data) -->
+      <!-- Top Analytics Summary Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-1">
           <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Sales (Month)</div>
@@ -159,7 +159,7 @@
             <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
           </section>
 
-          <!-- Banner Sliders Section (Editable Banners) -->
+          <!-- Banner Sliders Section -->
           <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div class="flex justify-between items-center">
               <div>
@@ -177,7 +177,7 @@
           <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div>
               <h2 class="text-xl font-bold text-purple-950">Customer Live Orders & Details</h2>
-              <p class="text-xs text-gray-400">Manage shipping status and view complete customer delivery info.</p>
+              <p class="text-xs text-gray-400">Manage shipping status, view delivery info, or delete old orders.</p>
             </div>
             <div id="orders-list" class="space-y-4"></div>
           </section>
@@ -393,7 +393,7 @@
       { title: 'Save Up to 35% on Earbuds', subtitle: 'Live on store front-end', image: '' }
     ];
 
-    let monthlyTarget = 620000; // Default target
+    let monthlyTarget = 620000;
 
     window.onload = async () => {
       await loadCollectionsFromSupabase();
@@ -583,7 +583,6 @@
       displayProducts();
     }
 
-    // Banners Management with Edit Support
     function renderBannersAdminList() {
       const container = document.getElementById('banners-list-container');
       container.innerHTML = bannersList.map((b, idx) => `
@@ -785,7 +784,7 @@
       }
     }
 
-    // Load Real Orders and Calculate Real Sales & Dispatch Metrics
+    // Load Orders and Include Delete Order Functionality
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -826,12 +825,26 @@
               <div class="font-bold text-purple-950">Order #${o.id} - ${o.customer_name} (${o.customer_phone})</div>
               <div class="text-gray-500">Address: ${o.address}</div>
             </div>
-            <div class="text-right space-y-1">
-              <div class="font-black text-purple-900">PKR ${o.total_amount}</div>
-              <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">${o.status || 'Pending'}</span>
+            <div class="flex items-center space-x-4">
+              <div class="text-right space-y-1">
+                <div class="font-black text-purple-900">PKR ${o.total_amount}</div>
+                <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">${o.status || 'Pending'}</span>
+              </div>
+              <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100">🗑️ Delete</button>
             </div>
           </div>
         `).join('');
+      }
+    }
+
+    async function deleteOrder(orderId) {
+      if (confirm(`Kya aap order #${orderId} ko delete karna chahte hain?`)) {
+        const { error } = await dbClient.from('orders').delete().eq('id', orderId);
+        if (!error) {
+          loadOrders();
+        } else {
+          alert('Error deleting order: ' + error.message);
+        }
       }
     }
 
@@ -854,7 +867,6 @@
       document.getElementById('metric-pending-orders').innerText = `⚡ ${pendingCount} pending/dispatch`;
       document.getElementById('metric-avg-order').innerText = 'PKR ' + avgOrder.toLocaleString();
 
-      // Update Monthly Target Progress
       let percentage = monthlyTarget > 0 ? Math.min(Math.round((totalSales / monthlyTarget) * 100), 100) : 0;
       document.getElementById('target-percentage').innerText = percentage + '%';
       document.getElementById('target-progress-bar').style.width = percentage + '%';
