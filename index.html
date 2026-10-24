@@ -177,7 +177,7 @@
           <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div>
               <h2 class="text-xl font-bold text-purple-950">Customer Live Orders & Details</h2>
-              <p class="text-xs text-gray-400">Manage shipping status, view ordered items list, or delete old orders.</p>
+              <p class="text-xs text-gray-400">Manage shipping status, view ordered items list with pictures, or delete old orders.</p>
             </div>
             <div id="orders-list" class="space-y-4"></div>
           </section>
@@ -784,7 +784,7 @@
       }
     }
 
-    // Load Orders with Complete Ordered Items (Pictures, Quantities, Prices)
+    // Load Orders with Fixed Image Mapping & User Accounts
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -820,21 +820,23 @@
 
       if (container) {
         container.innerHTML = allOrders.map(o => {
-          // Parsing ordered items safely
           let itemsHtml = '';
           try {
             let items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || o.cart_items || []);
             if (Array.isArray(items) && items.length > 0) {
-              itemsHtml = items.map(item => `
-                <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-100 mt-2">
-                  <img src="${item.image_url || item.image || ''}" class="w-12 h-12 object-contain bg-gray-50 rounded border flex-shrink-0">
-                  <div class="flex-1 min-w-0">
-                    <div class="font-bold text-gray-800 text-xs truncate">${item.title || 'Product'}</div>
-                    <div class="text-[10px] text-gray-500">Qty: <span class="font-bold text-purple-900">${item.quantity || 1}</span> × PKR ${item.price || 0}</div>
+              itemsHtml = items.map(item => {
+                const imgSource = item.image_url || item.image || item.product_image || item.imageUrl || '';
+                return `
+                  <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-100 mt-2">
+                    <img src="${imgSource}" class="w-12 h-12 object-contain bg-gray-50 rounded border flex-shrink-0" onerror="this.src='https://via.placeholder.com/50?text=No+Img'">
+                    <div class="flex-1 min-w-0">
+                      <div class="font-bold text-gray-800 text-xs truncate">${item.title || item.name || 'Product'}</div>
+                      <div class="text-[10px] text-gray-500">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || 0}</div>
+                    </div>
+                    <div class="font-black text-purple-950 text-xs">PKR ${(item.price || 0) * (item.quantity || item.qty || 1)}</div>
                   </div>
-                  <div class="font-black text-purple-950 text-xs">PKR ${(item.price || 0) * (item.quantity || 1)}</div>
-                </div>
-              `).join('');
+                `;
+              }).join('');
             } else {
               itemsHtml = `<div class="text-xs text-gray-400 mt-1 italic">No item details breakdown found in this order.</div>`;
             }
