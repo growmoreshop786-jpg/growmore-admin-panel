@@ -792,15 +792,20 @@
       }
     }
 
-    // Fast Instant Toggle Order Expansion
     function toggleOrderAccordion(orderId) {
       expandedOrders[orderId] = !expandedOrders[orderId];
       loadOrders();
     }
 
-    // Download PDF Receipt using html2pdf
     function downloadOrderPDF(orderId) {
       const element = document.getElementById(`receipt-printable-${orderId}`);
+      
+      // Temporary hide status dropdown and delete button from PDF receipt output
+      const statusBlock = element.querySelector('.pdf-hide-status');
+      const deleteBtn = element.querySelector('.pdf-hide-delete');
+      if (statusBlock) statusBlock.style.display = 'none';
+      if (deleteBtn) deleteBtn.style.display = 'none';
+
       const opt = {
         margin:       10,
         filename:     `GrowMore_Order_${orderId}_Receipt.pdf`,
@@ -808,10 +813,13 @@
         html2canvas:  { scale: 2 },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      html2pdf().from(element).save();
+
+      html2pdf().from(element).save().then(() => {
+        if (statusBlock) statusBlock.style.display = 'flex';
+        if (deleteBtn) deleteBtn.style.display = 'flex';
+      });
     }
 
-    // Load Orders with Instant Toggle & Cash on Delivery label
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -874,7 +882,7 @@
                     <img src="${imgSource}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
                     <div class="flex-1 min-w-0">
                       <div class="font-bold text-gray-900 text-sm truncate">${item.title || item.name || 'Product'}</div>
-                      <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || item.unit_price || 0}</div>
+                      <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span></div>
                     </div>
                     <div class="font-black text-purple-950 text-sm">PKR ${(item.price || item.unit_price || 0) * (item.quantity || item.qty || 1)}</div>
                   </div>
@@ -913,14 +921,14 @@
                       <div class="font-bold text-gray-900 text-sm">👤 Name: <span class="font-normal text-gray-800">${o.customer_name}</span></div>
                       <div class="font-bold text-gray-900 text-sm">📍 Address: <span class="font-normal text-gray-800">${o.address}</span></div>
                       <div class="font-bold text-gray-900 text-sm">📞 Phone: <span class="font-normal text-gray-800">${o.customer_phone}</span></div>
-                      <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span> <span class="text-xs text-gray-400">(User ID: ${o.user_id || 'Guest'})</span></div>
+                      <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span></div>
                     </div>
                     <div class="flex flex-col items-end space-y-2">
                       <div class="text-right">
                         <div class="font-black text-purple-900 text-base">Total: PKR ${o.total_amount}</div>
                         <div class="text-[11px] font-bold text-gray-500 uppercase">Cash on Delivery</div>
                       </div>
-                      <div class="flex items-center space-x-2 pt-1">
+                      <div class="pdf-hide-status flex items-center space-x-2 pt-1">
                         <span class="text-xs font-bold text-gray-500">Status:</span>
                         <select onchange="updateOrderStatus(${o.id}, this.value)" onclick="event.stopPropagation()" class="bg-white border border-purple-300 text-purple-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none">
                           <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
@@ -942,7 +950,7 @@
                     <button onclick="downloadOrderPDF(${o.id})" class="bg-purple-100 text-purple-900 px-4 py-2 rounded-xl font-bold hover:bg-purple-200 text-xs shadow-sm flex items-center space-x-1">
                       <span>📥 Download PDF Receipt</span>
                     </button>
-                    <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold hover:bg-red-100 text-xs shadow-sm">🗑️ Delete Order</button>
+                    <button onclick="deleteOrder(${o.id})" class="pdf-hide-delete bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold hover:bg-red-100 text-xs shadow-sm">🗑️ Delete Order</button>
                   </div>
                 </div>
               ` : ''}
