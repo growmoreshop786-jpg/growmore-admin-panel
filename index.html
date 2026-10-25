@@ -463,8 +463,15 @@
         if (data && data.value) {
           const parsed = JSON.parse(data.value);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // Ensure we always have at least 2 banners structure synchronized
+            if (parsed.length === 1) {
+              parsed.push({ title: 'Bottom Banner: Mega Tech Discount', subtitle: 'Get extra 15% OFF on all accessories', image: '' });
+            }
             bannersList = parsed;
           }
+        } else {
+          // If no setting found, initialize default 2 banners in database
+          await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
         }
       } catch (e) {}
       
