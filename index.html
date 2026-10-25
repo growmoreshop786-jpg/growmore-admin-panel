@@ -577,23 +577,31 @@
     }
 
     async function loadRegisteredUsers() {
-      const { data } = await dbClient.from('users').select('*').order('created_at', { ascending: false });
-      allUsers = data || [];
-      document.getElementById('sidebar-user-count').innerText = allUsers.length;
-      
-      const container = document.getElementById('registered-users-list');
-      if (!allUsers.length) {
-        container.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 text-xs">No registered users found.</td></tr>`;
-        return;
-      }
+      try {
+        const { data, error } = await dbClient.from('users').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error('Error fetching users:', error.message);
+          return;
+        }
+        allUsers = data || [];
+        document.getElementById('sidebar-user-count').innerText = allUsers.length;
+        
+        const container = document.getElementById('registered-users-list');
+        if (!allUsers.length) {
+          container.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 text-xs">No registered users found.</td></tr>`;
+          return;
+        }
 
-      container.innerHTML = allUsers.map(u => `
-        <tr class="hover:bg-gray-50/50 text-xs">
-          <td class="py-3 px-2 font-bold text-gray-900">${u.name || 'No Name'}</td>
-          <td class="py-3 px-2 text-purple-900">${u.email || 'No Email'}</td>
-          <td class="py-3 px-2 text-gray-500">${u.created_at ? u.created_at.substring(0, 10) : 'N/A'}</td>
-        </tr>
-      `).join('');
+        container.innerHTML = allUsers.map(u => `
+          <tr class="hover:bg-gray-50/50 text-xs">
+            <td class="py-3 px-2 font-bold text-gray-900">${u.name || 'No Name'}</td>
+            <td class="py-3 px-2 text-purple-900">${u.email || 'No Email'}</td>
+            <td class="py-3 px-2 text-gray-500">${u.created_at ? u.created_at.substring(0, 10) : 'N/A'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Users load exception:', err);
+      }
     }
 
     async function loadRegisteredUsersSilent() {
