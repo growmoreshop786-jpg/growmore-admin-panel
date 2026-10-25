@@ -557,9 +557,10 @@
       const file = event.target.files[0];
       if (!file) return;
       const fileName = 'col_' + Date.now() + '_' + file.name;
-      const { error } = await dbClient.storage.from('intro').upload(fileName, file);
+      // Yahan bucket ka naam 'banners' set kar diya gaya hai
+      const { error } = await dbClient.storage.from('banners').upload(fileName, file);
       if (!error) {
-        const publicUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
+        const publicUrl = dbClient.storage.from('banners').getPublicUrl(fileName).data.publicUrl;
         collectionsList[index].image = publicUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
@@ -661,17 +662,18 @@
 
       if (imageFile) {
         statusDiv.classList.remove('hidden');
-        statusDiv.innerText = "Uploading image to Supabase storage... ⏳";
+        statusDiv.innerText = "Uploading image to 'banners' storage... ⏳";
         
         const fileName = 'banner_' + Date.now() + '_' + imageFile.name;
-        const { data, error } = await dbClient.storage.from('intro').upload(fileName, imageFile, { upsert: true });
+        // Yahan bucket ka naam 'banners' use ho raha hai
+        const { data, error } = await dbClient.storage.from('banners').upload(fileName, imageFile, { upsert: true });
         
         if (error) {
           statusDiv.innerText = "Upload Failed: " + error.message;
           alert('Upload Error: ' + error.message);
           return;
         } else {
-          const publicUrlRes = dbClient.storage.from('intro').getPublicUrl(fileName);
+          const publicUrlRes = dbClient.storage.from('banners').getPublicUrl(fileName);
           imageUrl = publicUrlRes.data.publicUrl;
         }
       }
@@ -777,9 +779,10 @@
 
       if (imageFile) {
         const fileName = 'prod_' + Date.now() + '_' + imageFile.name;
-        const { error } = await dbClient.storage.from('intro').upload(fileName, imageFile);
+        // Products ke liye bhi 'banners' bucket use karne ke liye ya apna mukhtalif bucket ho toh check karein
+        const { error } = await dbClient.storage.from('banners').upload(fileName, imageFile);
         if (!error) {
-          imageUrl = dbClient.storage.from('intro').getPublicUrl(fileName).data.publicUrl;
+          imageUrl = dbClient.storage.from('banners').getPublicUrl(fileName).data.publicUrl;
         } else {
           alert('Image Upload Error: ' + error.message);
           return;
