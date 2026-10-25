@@ -463,14 +463,12 @@
         if (data && data.value) {
           const parsed = JSON.parse(data.value);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // Ensure we always have at least 2 banners structure synchronized
             if (parsed.length === 1) {
               parsed.push({ title: 'Bottom Banner: Mega Tech Discount', subtitle: 'Get extra 15% OFF on all accessories', image: '' });
             }
             bannersList = parsed;
           }
         } else {
-          // If no setting found, initialize default 2 banners in database
           await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
         }
       } catch (e) {}
@@ -603,20 +601,26 @@
 
     function renderBannersAdminList() {
       const container = document.getElementById('banners-list-container');
-      container.innerHTML = bannersList.map((b, idx) => `
-        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2">
-          <div class="h-28 bg-gray-100 rounded-lg overflow-hidden relative">
-            ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Image Uploaded</div>`}
-            <span class="absolute top-2 left-2 bg-purple-900 text-white text-[10px] px-2 py-0.5 rounded font-bold">${idx === 0 ? 'Top Banner (Home)' : idx === 1 ? 'Bottom Banner (Home)' : 'Banner #' + (idx + 1)}</span>
+      container.innerHTML = bannersList.map((b, idx) => {
+        // Banner ke size ka text batane ke liye
+        let sizeInfo = idx === 0 ? 'Recommended Size: 1200 x 600 px (Wide)' : 'Recommended Size: 1200 x 400 px (Compact)';
+        return `
+          <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2">
+            <div class="h-28 bg-gray-100 rounded-lg overflow-hidden relative">
+              ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Image Uploaded</div>`}
+              <span class="absolute top-2 left-2 bg-purple-900 text-white text-[10px] px-2 py-0.5 rounded font-bold">${idx === 0 ? 'Top Banner (Home)' : idx === 1 ? 'Bottom Banner (Home)' : 'Banner #' + (idx + 1)}</span>
+            </div>
+            <div class="font-bold text-gray-800 text-xs">${b.title}</div>
+            <div class="text-[11px] text-gray-500">${b.subtitle}</div>
+            <!-- Banner ke neeche size mention kiya gaya hai -->
+            <div class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">📏 ${sizeInfo}</div>
+            <div class="flex justify-end space-x-2 pt-2 border-t">
+              <button onclick="openEditBannerModal(${idx})" class="text-blue-600 text-xs font-bold hover:underline">Edit Banner</button>
+              ${bannersList.length > 2 ? `<button onclick="deleteBanner(${idx})" class="text-red-600 text-xs font-bold hover:underline">Delete</button>` : ''}
+            </div>
           </div>
-          <div class="font-bold text-gray-800 text-xs">${b.title}</div>
-          <div class="text-[11px] text-gray-500">${b.subtitle}</div>
-          <div class="flex justify-end space-x-2 pt-2 border-t">
-            <button onclick="openEditBannerModal(${idx})" class="text-blue-600 text-xs font-bold hover:underline">Edit Banner</button>
-            ${bannersList.length > 2 ? `<button onclick="deleteBanner(${idx})" class="text-red-600 text-xs font-bold hover:underline">Delete</button>` : ''}
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function openAddBannerModal() {
@@ -670,7 +674,7 @@
       await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
       closeBannerModal();
       loadBannersFromSupabase();
-      alert('Banner updated successfully! ✅');
+      alert('Banner updated successfully! ✅ (App mein dekhne ke liye app ko restart karein)');
     }
 
     async function deleteBanner(idx) {
@@ -1033,7 +1037,7 @@
       currentImageUrl = '';
       currentExtraImages = [];
       document.getElementById('modal-title').innerText = 'Add Product';
-      document.getElementById('product-modal').classList.remove('hidden');
+      document.getElementById('product-modal').classList.add('hidden');
     }
     function closeModal() {
       document.getElementById('product-modal').classList.add('hidden');
