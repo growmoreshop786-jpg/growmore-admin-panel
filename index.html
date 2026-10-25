@@ -374,6 +374,7 @@
     let currentImageUrl = '';
     let currentExtraImages = [];
     let currentActiveTab = 'products';
+    let expandedOrders = {}; // Track which orders are open
 
     let collectionsList = [
       { name: 'Earbuds', image: '' },
@@ -790,7 +791,13 @@
       }
     }
 
-    // Load Orders with Large Clear Text & Status Update Dropdown (Pending, Processing, Shipped, Delivered)
+    // Toggle Order Expansion (Accordion style for Privacy & Space saving)
+    function toggleOrderAccordion(orderId) {
+      expandedOrders[orderId] = !expandedOrders[orderId];
+      loadOrders();
+    }
+
+    // Load Orders with Accordion (Only Order Number visible by default, click to expand)
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -826,78 +833,97 @@
 
       if (container) {
         container.innerHTML = allOrders.map(o => {
-          let itemsHtml = '';
-          try {
-            let items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || o.cart_items || o.product_list || []);
-            
-            if (!Array.isArray(items) && typeof items === 'object' && items !== null) {
-              items = [items];
-            }
-
-            if (Array.isArray(items) && items.length > 0) {
-              itemsHtml = items.map(item => {
-                let imgSource = item.image_url || item.image || item.product_image || item.imageUrl || item.img || item.photo || '';
-                
-                if (!imgSource && item.title) {
-                  let matchedProd = allProducts.find(p => p.title?.toLowerCase().trim() === item.title?.toLowerCase().trim());
-                  if (matchedProd) {
-                    imgSource = matchedProd.image_url || '';
-                  }
-                }
-
-                return `
-                  <div class="flex items-center space-x-4 bg-white p-4 rounded-xl border border-gray-100 mt-3 shadow-sm">
-                    <img src="${imgSource}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
-                    <div class="flex-1 min-w-0">
-                      <div class="font-bold text-gray-900 text-sm truncate">${item.title || item.name || 'Product'}</div>
-                      <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || item.unit_price || 0}</div>
-                    </div>
-                    <div class="font-black text-purple-950 text-sm">PKR ${(item.price || item.unit_price || 0) * (item.quantity || item.qty || 1)}</div>
-                  </div>
-                `;
-              }).join('');
-            } else {
-              itemsHtml = `<div class="text-sm text-gray-400 mt-1 italic">Total Order Amount: PKR ${o.total_amount}</div>`;
-            }
-          } catch(e) {
-            itemsHtml = `<div class="text-sm text-red-400 mt-1">Error loading items data.</div>`;
-          }
-
+          let isExpanded = !!expandedOrders[o.id];
           let currentStatus = o.status || 'Pending';
 
+          let itemsHtml = '';
+          if (isExpanded) {
+            try {
+              let items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || o.cart_items || o.product_list || []);
+              
+              if (!Array.isArray(items) && typeof items === 'object' && items !== null) {
+                items = [items];
+              }
+
+              if (Array.isArray(items) && items.length > 0) {
+                itemsHtml = items.map(item => {
+                  let imgSource = item.image_url || item.image || item.product_image || item.imageUrl || item.img || item.photo || '';
+                  
+                  if (!imgSource && item.title) {
+                    let matchedProd = allProducts.find(p => p.title?.toLowerCase().trim() === item.title?.toLowerCase().trim());
+                    if (matchedProd) {
+                      imgSource = matchedProd.image_url || '';
+                    }
+                  }
+
+                  return `
+                    <div class="flex items-center space-x-4 bg-white p-4 rounded-xl border border-gray-100 mt-3 shadow-sm">
+                      <img src="${imgSource}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
+                      <div class="flex-1 min-w-0">
+                        <div class="font-bold text-gray-900 text-sm truncate">${item.title || item.name || 'Product'}</div>
+                        <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || item.unit_price || 0}</div>
+                      </div>
+                      <div class="font-black text-purple-950 text-sm">PKR ${(item.price || item.unit_price || 0) * (item.quantity || item.qty || 1)}</div>
+                    </div>
+                  `;
+                }).join('');
+              } else {
+                itemsHtml = `<div class="text-sm text-gray-400 mt-1 italic">Total Order Amount: PKR ${o.total_amount}</div>`;
+              }
+            } catch(e) {
+              itemsHtml = `<div class="text-sm text-red-400 mt-1">Error loading items data.</div>`;
+            }
+          }
+
           return `
-            <div class="bg-gray-50 p-5 rounded-2xl border space-y-4 text-sm">
-              <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
-                <div class="space-y-1.5">
-                  <div class="font-bold text-purple-950 text-base">Order #${o.id}</div>
-                  <div class="font-bold text-gray-900 text-sm">👤 Name: <span class="font-normal text-gray-800">${o.customer_name}</span></div>
-                  <div class="font-bold text-gray-900 text-sm">📍 Address: <span class="font-normal text-gray-800">${o.address}</span></div>
-                  <div class="font-bold text-gray-900 text-sm">📞 Phone: <span class="font-normal text-gray-800">${o.customer_phone}</span></div>
-                  <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span> <span class="text-xs text-gray-400">(User ID: ${o.user_id || 'Guest'})</span></div>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-3">
+              <!-- Compact Header (Always visible: Order #, Name summary, Status, Total) -->
+              <div onclick="toggleOrderAccordion(${o.id})" class="p-4 bg-gray-50 hover:bg-purple-50/40 cursor-pointer flex justify-between items-center transition">
+                <div class="flex items-center space-x-3">
+                  <span class="text-purple-700 font-black text-base">Order #${o.id}</span>
+                  <span class="text-gray-500 text-xs hidden sm:inline">👤 ${o.customer_name}</span>
+                  <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full font-bold text-[10px]">${currentStatus}</span>
                 </div>
-                <div class="flex flex-col items-end space-y-2">
-                  <div class="font-black text-purple-900 text-base">Total: PKR ${o.total_amount}</div>
-                  <div class="flex items-center space-x-2">
-                    <span class="text-xs font-bold text-gray-500">Status:</span>
-                    <select onchange="updateOrderStatus(${o.id}, this.value)" class="bg-white border border-purple-300 text-purple-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none">
-                      <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
-                      <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
-                      <option value="Shipped" ${currentStatus === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                      <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                    </select>
+                <div class="flex items-center space-x-4">
+                  <span class="font-black text-purple-950 text-sm">PKR ${o.total_amount}</span>
+                  <span class="text-gray-400 text-xs font-bold">${isExpanded ? '▲ Hide Details' : '▼ View Details'}</span>
+                </div>
+              </div>
+
+              <!-- Expandable Full Details Section -->
+              ${isExpanded ? `
+                <div class="p-5 border-t border-gray-100 space-y-4 text-sm bg-white">
+                  <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
+                    <div class="space-y-1.5">
+                      <div class="font-bold text-gray-900 text-sm">👤 Name: <span class="font-normal text-gray-800">${o.customer_name}</span></div>
+                      <div class="font-bold text-gray-900 text-sm">📍 Address: <span class="font-normal text-gray-800">${o.address}</span></div>
+                      <div class="font-bold text-gray-900 text-sm">📞 Phone: <span class="font-normal text-gray-800">${o.customer_phone}</span></div>
+                      <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span> <span class="text-xs text-gray-400">(User ID: ${o.user_id || 'Guest'})</span></div>
+                    </div>
+                    <div class="flex flex-col items-end space-y-2">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-xs font-bold text-gray-500">Status:</span>
+                        <select onchange="updateOrderStatus(${o.id}, this.value)" onclick="event.stopPropagation()" class="bg-white border border-purple-300 text-purple-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none">
+                          <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
+                          <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
+                          <option value="Shipped" ${currentStatus === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                          <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Ordered Products List Box -->
+                  <div>
+                    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ordered Product Images & Details:</div>
+                    <div class="space-y-1">${itemsHtml}</div>
+                  </div>
+
+                  <div class="flex justify-end pt-2">
+                    <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold hover:bg-red-100 text-xs shadow-sm">🗑️ Delete Order</button>
                   </div>
                 </div>
-              </div>
-
-              <!-- Ordered Products List Box -->
-              <div>
-                <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ordered Product Images & Details:</div>
-                <div class="space-y-1">${itemsHtml}</div>
-              </div>
-
-              <div class="flex justify-end pt-2">
-                <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold hover:bg-red-100 text-xs shadow-sm">🗑️ Delete Order</button>
-              </div>
+              ` : ''}
             </div>
           `;
         }).join('');
