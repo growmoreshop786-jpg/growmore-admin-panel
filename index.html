@@ -164,8 +164,8 @@
           <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div class="flex justify-between items-center">
               <div>
-                <h2 class="text-xl font-bold text-purple-950">Manage Banner Sliders</h2>
-                <p class="text-xs text-gray-400">Promotional banners jo store front-end par rotate karenge.</p>
+                <h2 class="text-xl font-bold text-purple-950">Manage Home Banners (Top & Bottom)</h2>
+                <p class="text-xs text-gray-400">Yahan se aap app ke dono banners (Top aur Bottom) ko control kar sakte hain.</p>
               </div>
               <button onclick="openAddBannerModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
                 + Add New Banner
@@ -203,11 +203,11 @@
             </div>
           </div>
 
-          <!-- Active Promo Banner Widget -->
+          <!-- Active Home Banners Widget -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
             <div class="flex justify-between items-center">
-              <h3 class="font-bold text-purple-950 text-xs uppercase tracking-wider">Active Promo Banners</h3>
-              <span id="banner-slot-badge" class="text-[10px] font-bold bg-purple-50 text-purple-800 px-2 py-0.5 rounded">All Banners</span>
+              <h3 class="font-bold text-purple-950 text-xs uppercase tracking-wider">Home Banners Preview</h3>
+              <span id="banner-slot-badge" class="text-[10px] font-bold bg-purple-50 text-purple-800 px-2 py-0.5 rounded">2 Active</span>
             </div>
 
             <div id="widget-banners-container" class="space-y-3">
@@ -319,7 +319,7 @@
   <!-- Add/Edit Banner Modal -->
   <div id="banner-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative">
-      <h3 id="banner-modal-title" class="text-lg font-bold text-purple-950 mb-3">Add Banner Slider</h3>
+      <h3 id="banner-modal-title" class="text-lg font-bold text-purple-950 mb-3">Edit Banner</h3>
       <form onsubmit="saveBanner(event)" class="space-y-3">
         <input type="hidden" id="banner-index">
         <div>
@@ -387,8 +387,8 @@
     ];
 
     let bannersList = [
-      { title: 'Top Banner (Home)', subtitle: 'Upper section banner', image: '' },
-      { title: 'Bottom Banner (Home)', subtitle: 'Lower section banner', image: '' }
+      { title: 'Top Banner: 20% OFF ALL PRODUCTS', subtitle: 'Free Delivery All Pakistan', image: '' },
+      { title: 'Bottom Banner: Mega Tech Discount', subtitle: 'Get extra 15% OFF on all accessories', image: '' }
     ];
 
     let monthlyTarget = 620000;
@@ -483,7 +483,7 @@
             <div class="text-[10px] text-purple-200 truncate">${b.subtitle}</div>
           </div>
         `).join('');
-        document.getElementById('banner-slot-badge').innerText = `${bannersList.length} Banners`;
+        document.getElementById('banner-slot-badge').innerText = `${bannersList.length} Active`;
       }
     }
 
@@ -599,14 +599,14 @@
       container.innerHTML = bannersList.map((b, idx) => `
         <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2">
           <div class="h-28 bg-gray-100 rounded-lg overflow-hidden relative">
-            ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Image</div>`}
+            ${b.image ? `<img src="${b.image}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-gray-400 text-xs">No Image Uploaded</div>`}
             <span class="absolute top-2 left-2 bg-purple-900 text-white text-[10px] px-2 py-0.5 rounded font-bold">${idx === 0 ? 'Top Banner (Home)' : idx === 1 ? 'Bottom Banner (Home)' : 'Banner #' + (idx + 1)}</span>
           </div>
           <div class="font-bold text-gray-800 text-xs">${b.title}</div>
           <div class="text-[11px] text-gray-500">${b.subtitle}</div>
           <div class="flex justify-end space-x-2 pt-2 border-t">
-            <button onclick="openEditBannerModal(${idx})" class="text-blue-600 text-xs font-bold hover:underline">Edit</button>
-            <button onclick="deleteBanner(${idx})" class="text-red-600 text-xs font-bold hover:underline">Delete</button>
+            <button onclick="openEditBannerModal(${idx})" class="text-blue-600 text-xs font-bold hover:underline">Edit Banner</button>
+            ${bannersList.length > 2 ? `<button onclick="deleteBanner(${idx})" class="text-red-600 text-xs font-bold hover:underline">Delete</button>` : ''}
           </div>
         </div>
       `).join('');
@@ -617,7 +617,7 @@
       document.getElementById('banner-title').value = '';
       document.getElementById('banner-subtitle').value = '';
       document.getElementById('banner-image-file').value = '';
-      document.getElementById('banner-modal-title').innerText = 'Add Banner Slider';
+      document.getElementById('banner-modal-title').innerText = 'Add New Banner';
       document.getElementById('banner-modal').classList.remove('hidden');
     }
 
@@ -627,7 +627,7 @@
       document.getElementById('banner-title').value = b.title;
       document.getElementById('banner-subtitle').value = b.subtitle;
       document.getElementById('banner-image-file').value = '';
-      document.getElementById('banner-modal-title').innerText = 'Edit Banner Slider';
+      document.getElementById('banner-modal-title').innerText = idx === 0 ? 'Edit Top Banner' : 'Edit Bottom Banner';
       document.getElementById('banner-modal').classList.remove('hidden');
     }
 
@@ -663,11 +663,12 @@
       await dbClient.from('settings').upsert({ key: 'app_banners', value: JSON.stringify(bannersList) });
       closeBannerModal();
       loadBannersFromSupabase();
+      alert('Banner updated successfully! ✅');
     }
 
     async function deleteBanner(idx) {
-      if (bannersList.length <= 1) {
-        alert('Kam az kam 1 banner hona zaroori hai!');
+      if (bannersList.length <= 2) {
+        alert('Home screen ke liye kam az kam 2 banners hone zaroori hain!');
         return;
       }
       if (confirm('Delete this banner?')) {
