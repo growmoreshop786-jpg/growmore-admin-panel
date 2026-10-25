@@ -790,7 +790,7 @@
       }
     }
 
-    // Load Orders with Large Clear Text & Status Update Dropdown
+    // Load Orders with Large Clear Text & Status Update Dropdown (Pending, Processing, Shipped, Delivered)
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -882,9 +882,8 @@
                     <select onchange="updateOrderStatus(${o.id}, this.value)" class="bg-white border border-purple-300 text-purple-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none">
                       <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
                       <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
-                      <option value="Dispatched" ${currentStatus === 'Dispatched' ? 'selected' : ''}>Dispatched</option>
+                      <option value="Shipped" ${currentStatus === 'Shipped' ? 'selected' : ''}>Shipped</option>
                       <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                      <option value="Cancelled" ${currentStatus === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
                   </div>
                 </div>
