@@ -6,6 +6,7 @@
   <title>GrowMore Store - Web Admin Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
@@ -374,7 +375,7 @@
     let currentImageUrl = '';
     let currentExtraImages = [];
     let currentActiveTab = 'products';
-    let expandedOrders = {}; // Track which orders are open
+    let expandedOrders = {};
 
     let collectionsList = [
       { name: 'Earbuds', image: '' },
@@ -791,13 +792,26 @@
       }
     }
 
-    // Toggle Order Expansion (Accordion style for Privacy & Space saving)
+    // Fast Instant Toggle Order Expansion
     function toggleOrderAccordion(orderId) {
       expandedOrders[orderId] = !expandedOrders[orderId];
       loadOrders();
     }
 
-    // Load Orders with Accordion (Only Order Number visible by default, click to expand)
+    // Download PDF Receipt using html2pdf
+    function downloadOrderPDF(orderId) {
+      const element = document.getElementById(`receipt-printable-${orderId}`);
+      const opt = {
+        margin:       10,
+        filename:     `GrowMore_Order_${orderId}_Receipt.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().from(element).save();
+    }
+
+    // Load Orders with Instant Toggle & Cash on Delivery label
     async function loadOrders() {
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       allOrders = data || [];
@@ -837,47 +851,45 @@
           let currentStatus = o.status || 'Pending';
 
           let itemsHtml = '';
-          if (isExpanded) {
-            try {
-              let items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || o.cart_items || o.product_list || []);
-              
-              if (!Array.isArray(items) && typeof items === 'object' && items !== null) {
-                items = [items];
-              }
-
-              if (Array.isArray(items) && items.length > 0) {
-                itemsHtml = items.map(item => {
-                  let imgSource = item.image_url || item.image || item.product_image || item.imageUrl || item.img || item.photo || '';
-                  
-                  if (!imgSource && item.title) {
-                    let matchedProd = allProducts.find(p => p.title?.toLowerCase().trim() === item.title?.toLowerCase().trim());
-                    if (matchedProd) {
-                      imgSource = matchedProd.image_url || '';
-                    }
-                  }
-
-                  return `
-                    <div class="flex items-center space-x-4 bg-white p-4 rounded-xl border border-gray-100 mt-3 shadow-sm">
-                      <img src="${imgSource}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
-                      <div class="flex-1 min-w-0">
-                        <div class="font-bold text-gray-900 text-sm truncate">${item.title || item.name || 'Product'}</div>
-                        <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || item.unit_price || 0}</div>
-                      </div>
-                      <div class="font-black text-purple-950 text-sm">PKR ${(item.price || item.unit_price || 0) * (item.quantity || item.qty || 1)}</div>
-                    </div>
-                  `;
-                }).join('');
-              } else {
-                itemsHtml = `<div class="text-sm text-gray-400 mt-1 italic">Total Order Amount: PKR ${o.total_amount}</div>`;
-              }
-            } catch(e) {
-              itemsHtml = `<div class="text-sm text-red-400 mt-1">Error loading items data.</div>`;
+          try {
+            let items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || o.cart_items || o.product_list || []);
+            
+            if (!Array.isArray(items) && typeof items === 'object' && items !== null) {
+              items = [items];
             }
+
+            if (Array.isArray(items) && items.length > 0) {
+              itemsHtml = items.map(item => {
+                let imgSource = item.image_url || item.image || item.product_image || item.imageUrl || item.img || item.photo || '';
+                
+                if (!imgSource && item.title) {
+                  let matchedProd = allProducts.find(p => p.title?.toLowerCase().trim() === item.title?.toLowerCase().trim());
+                  if (matchedProd) {
+                    imgSource = matchedProd.image_url || '';
+                  }
+                }
+
+                return `
+                  <div class="flex items-center space-x-4 bg-white p-4 rounded-xl border border-gray-100 mt-3 shadow-sm">
+                    <img src="${imgSource}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg border flex-shrink-0" onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
+                    <div class="flex-1 min-w-0">
+                      <div class="font-bold text-gray-900 text-sm truncate">${item.title || item.name || 'Product'}</div>
+                      <div class="text-xs text-gray-600 mt-0.5">Qty: <span class="font-bold text-purple-900">${item.quantity || item.qty || 1}</span> × PKR ${item.price || item.unit_price || 0}</div>
+                    </div>
+                    <div class="font-black text-purple-950 text-sm">PKR ${(item.price || item.unit_price || 0) * (item.quantity || item.qty || 1)}</div>
+                  </div>
+                `;
+              }).join('');
+            } else {
+              itemsHtml = `<div class="text-sm text-gray-400 mt-1 italic">Total Order Amount: PKR ${o.total_amount}</div>`;
+            }
+          } catch(e) {
+            itemsHtml = `<div class="text-sm text-red-400 mt-1">Error loading items data.</div>`;
           }
 
           return `
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-3">
-              <!-- Compact Header (Always visible: Order #, Name summary, Status, Total) -->
+              <!-- Compact Header -->
               <div onclick="toggleOrderAccordion(${o.id})" class="p-4 bg-gray-50 hover:bg-purple-50/40 cursor-pointer flex justify-between items-center transition">
                 <div class="flex items-center space-x-3">
                   <span class="text-purple-700 font-black text-base">Order #${o.id}</span>
@@ -885,14 +897,17 @@
                   <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full font-bold text-[10px]">${currentStatus}</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                  <span class="font-black text-purple-950 text-sm">PKR ${o.total_amount}</span>
-                  <span class="text-gray-400 text-xs font-bold">${isExpanded ? '▲ Hide Details' : '▼ View Details'}</span>
+                  <div class="text-right">
+                    <div class="font-black text-purple-950 text-sm">PKR ${o.total_amount}</div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cash on Delivery</div>
+                  </div>
+                  <span class="text-purple-700 text-xs font-bold bg-purple-100 px-3 py-1.5 rounded-lg">${isExpanded ? '▲ Hide Details' : '▼ View Details'}</span>
                 </div>
               </div>
 
               <!-- Expandable Full Details Section -->
               ${isExpanded ? `
-                <div class="p-5 border-t border-gray-100 space-y-4 text-sm bg-white">
+                <div id="receipt-printable-${o.id}" class="p-5 border-t border-gray-100 space-y-4 text-sm bg-white">
                   <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
                     <div class="space-y-1.5">
                       <div class="font-bold text-gray-900 text-sm">👤 Name: <span class="font-normal text-gray-800">${o.customer_name}</span></div>
@@ -901,7 +916,11 @@
                       <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span> <span class="text-xs text-gray-400">(User ID: ${o.user_id || 'Guest'})</span></div>
                     </div>
                     <div class="flex flex-col items-end space-y-2">
-                      <div class="flex items-center space-x-2">
+                      <div class="text-right">
+                        <div class="font-black text-purple-900 text-base">Total: PKR ${o.total_amount}</div>
+                        <div class="text-[11px] font-bold text-gray-500 uppercase">Cash on Delivery</div>
+                      </div>
+                      <div class="flex items-center space-x-2 pt-1">
                         <span class="text-xs font-bold text-gray-500">Status:</span>
                         <select onchange="updateOrderStatus(${o.id}, this.value)" onclick="event.stopPropagation()" class="bg-white border border-purple-300 text-purple-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none">
                           <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
@@ -919,7 +938,10 @@
                     <div class="space-y-1">${itemsHtml}</div>
                   </div>
 
-                  <div class="flex justify-end pt-2">
+                  <div class="flex justify-between items-center pt-3 border-t">
+                    <button onclick="downloadOrderPDF(${o.id})" class="bg-purple-100 text-purple-900 px-4 py-2 rounded-xl font-bold hover:bg-purple-200 text-xs shadow-sm flex items-center space-x-1">
+                      <span>📥 Download PDF Receipt</span>
+                    </button>
                     <button onclick="deleteOrder(${o.id})" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold hover:bg-red-100 text-xs shadow-sm">🗑️ Delete Order</button>
                   </div>
                 </div>
