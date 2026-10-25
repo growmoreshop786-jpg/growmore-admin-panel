@@ -57,6 +57,11 @@
             <span>🛒 Live Orders & Details</span>
             <span id="sidebar-order-count" class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold">New</span>
           </button>
+          <!-- Registered Users Tab Button -->
+          <button onclick="switchTab('users')" id="tab-users" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
+            <span>👥 Registered Users</span>
+            <span id="sidebar-user-count" class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold">...</span>
+          </button>
         </div>
       </div>
 
@@ -181,6 +186,28 @@
               <p class="text-xs text-gray-400">Manage shipping status, view ordered products with images, or delete orders.</p>
             </div>
             <div id="orders-list" class="space-y-4"></div>
+          </section>
+
+          <!-- Registered Users Section -->
+          <section id="section-users" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+            <div>
+              <h2 class="text-xl font-bold text-purple-950">Registered Users List</h2>
+              <p class="text-xs text-gray-400">Yeh woh tamam users hain jinhone aapki app par register kiya hai.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase">
+                    <th class="pb-3 px-2">Name</th>
+                    <th class="pb-3 px-2">Email</th>
+                    <th class="pb-3 px-2">Registration Date</th>
+                  </tr>
+                </thead>
+                <tbody id="registered-users-list" class="divide-y divide-gray-50">
+                  <tr><td colspan="3" class="p-6 text-center text-gray-400 text-xs">Loading registered users...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
         </div>
@@ -366,6 +393,7 @@
 
     let allProducts = [];
     let allOrders = [];
+    let allUsers = [];
     let selectedAdminCategory = 'All';
     let currentImageUrl = '';
     let currentExtraImages = [];
@@ -400,17 +428,22 @@
       await loadMonthlyTarget();
       await loadProducts();
       await loadOrders();
+      await loadRegisteredUsers();
 
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
         .subscribe();
 
+      dbClient.channel('public:users')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadRegisteredUsers())
+        .subscribe();
+
       setInterval(() => {
         loadOrdersSilent();
+        loadRegisteredUsersSilent();
       }, 3000);
     };
 
-    // Robust Direct HTTP REST API upload to bypass JS client CORS issue
     async function uploadFileToSupabaseDirect(file, bucketName) {
       const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
@@ -523,11 +556,13 @@
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
       document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
+      document.getElementById('section-users').classList.toggle('hidden', tab !== 'users');
       
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition';
       document.getElementById('tab-collections').className = tab === 'collections' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition';
       document.getElementById('tab-banners').className = tab === 'banners' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition';
       document.getElementById('tab-orders').className = tab === 'orders' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition';
+      document.getElementById('tab-users').className = tab === 'users' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition';
     }
 
     async function loadProducts() {
@@ -539,6 +574,37 @@
       document.getElementById('sidebar-product-count').innerText = totalCount;
       
       displayProducts();
+    }
+
+    async function loadRegisteredUsers() {
+      const { data } = await dbClient.from('users').select('*').order('created_at', { ascending: false });
+      allUsers = data || [];
+      document.getElementById('sidebar-user-count').innerText = allUsers.length;
+      
+      const container = document.getElementById('registered-users-list');
+      if (!allUsers.length) {
+        container.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 text-xs">No registered users found.</td></tr>`;
+        return;
+      }
+
+      container.innerHTML = allUsers.map(u => `
+        <tr class="hover:bg-gray-50/50 text-xs">
+          <td class="py-3 px-2 font-bold text-gray-900">${u.name || 'No Name'}</td>
+          <td class="py-3 px-2 text-purple-900">${u.email || 'No Email'}</td>
+          <td class="py-3 px-2 text-gray-500">${u.created_at ? u.created_at.substring(0, 10) : 'N/A'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadRegisteredUsersSilent() {
+      const { data } = await dbClient.from('users').select('*').order('created_at', { ascending: false });
+      if (data) {
+        allUsers = data;
+        document.getElementById('sidebar-user-count').innerText = allUsers.length;
+        if (!document.getElementById('section-users').classList.contains('hidden')) {
+          loadRegisteredUsers();
+        }
+      }
     }
 
     function renderCategoryFilters() {
@@ -1025,10 +1091,7 @@
         updateSalesMetrics(allOrders);
         document.getElementById('sidebar-order-count').innerText = allOrders.length + ' Orders';
         if (!document.getElementById('section-orders').classList.contains('hidden')) {
-          const container = document.getElementById('orders-list');
-          if (container && allOrders.length > 0) {
-            loadOrders(); 
-          }
+          loadOrders(); 
         }
       }
     }
