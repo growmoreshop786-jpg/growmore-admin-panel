@@ -800,7 +800,6 @@
     function downloadOrderPDF(orderId) {
       const element = document.getElementById(`receipt-printable-${orderId}`);
       
-      // Temporary hide status dropdown and delete button from PDF receipt output
       const statusBlock = element.querySelector('.pdf-hide-status');
       const deleteBtn = element.querySelector('.pdf-hide-delete');
       if (statusBlock) statusBlock.style.display = 'none';
@@ -897,18 +896,14 @@
 
           return `
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-3">
-              <!-- Compact Header -->
+              <!-- Compact Header (Price & Cash on Delivery removed from here) -->
               <div onclick="toggleOrderAccordion(${o.id})" class="p-4 bg-gray-50 hover:bg-purple-50/40 cursor-pointer flex justify-between items-center transition">
                 <div class="flex items-center space-x-3">
                   <span class="text-purple-700 font-black text-base">Order #${o.id}</span>
                   <span class="text-gray-500 text-xs hidden sm:inline">👤 ${o.customer_name}</span>
                   <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full font-bold text-[10px]">${currentStatus}</span>
                 </div>
-                <div class="flex items-center space-x-4">
-                  <div class="text-right">
-                    <div class="font-black text-purple-950 text-sm">PKR ${o.total_amount}</div>
-                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cash on Delivery</div>
-                  </div>
+                <div>
                   <span class="text-purple-700 text-xs font-bold bg-purple-100 px-3 py-1.5 rounded-lg">${isExpanded ? '▲ Hide Details' : '▼ View Details'}</span>
                 </div>
               </div>
