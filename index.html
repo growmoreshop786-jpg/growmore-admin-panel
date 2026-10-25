@@ -410,6 +410,30 @@
       }, 3000);
     };
 
+    // Robust Direct HTTP REST API upload to bypass JS client CORS issue
+    async function uploadFileToSupabaseDirect(file, bucketName) {
+      const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
+      
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'x-upsert': 'true'
+        },
+        body: file
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || 'Upload failed with status ' + response.status);
+      }
+
+      const publicUrlRes = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${fileName}`;
+      return publicUrlRes;
+    }
+
     async function loadMonthlyTarget() {
       try {
         const { data } = await dbClient.from('settings').select('value').eq('key', 'monthly_target').maybeSingle();
@@ -556,17 +580,14 @@
     async function uploadCollectionImage(event, index) {
       const file = event.target.files[0];
       if (!file) return;
-      const fileName = 'col_' + Date.now() + '_' + file.name;
-      // Yahan bucket ka naam 'banners' set kar diya gaya hai
-      const { error } = await dbClient.storage.from('banners').upload(fileName, file);
-      if (!error) {
-        const publicUrl = dbClient.storage.from('banners').getPublicUrl(fileName).data.publicUrl;
+      try {
+        const publicUrl = await uploadFileToSupabaseDirect(file, 'banners');
         collectionsList[index].image = publicUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
         alert('Collection picture updated! ✅');
-      } else {
-        alert('Upload Error: ' + error.message);
+      } catch (err) {
+        alert('Upload Error: ' + err.message);
       }
     }
 
@@ -664,17 +685,12 @@
         statusDiv.classList.remove('hidden');
         statusDiv.innerText = "Uploading image to 'banners' storage... ⏳";
         
-        const fileName = 'banner_' + Date.now() + '_' + imageFile.name;
-        // Yahan bucket ka naam 'banners' use ho raha hai
-        const { data, error } = await dbClient.storage.from('banners').upload(fileName, imageFile, { upsert: true });
-        
-        if (error) {
+        try {
+          imageUrl = await uploadFileToSupabaseDirect(imageFile, 'banners');
+        } catch (error) {
           statusDiv.innerText = "Upload Failed: " + error.message;
           alert('Upload Error: ' + error.message);
           return;
-        } else {
-          const publicUrlRes = dbClient.storage.from('banners').getPublicUrl(fileName);
-          imageUrl = publicUrlRes.data.publicUrl;
         }
       }
 
@@ -778,12 +794,9 @@
       let imageUrl = currentImageUrl;
 
       if (imageFile) {
-        const fileName = 'prod_' + Date.now() + '_' + imageFile.name;
-        // Products ke liye bhi 'banners' bucket use karne ke liye ya apna mukhtalif bucket ho toh check karein
-        const { error } = await dbClient.storage.from('banners').upload(fileName, imageFile);
-        if (!error) {
-          imageUrl = dbClient.storage.from('banners').getPublicUrl(fileName).data.publicUrl;
-        } else {
+        try {
+          imageUrl = await uploadFileToSupabaseDirect(imageFile, 'banners');
+        } catch (error) {
           alert('Image Upload Error: ' + error.message);
           return;
         }
