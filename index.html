@@ -14,7 +14,7 @@
   <header class="bg-purple-950 text-white px-6 py-3 shadow-md flex justify-between items-center">
     <div class="flex items-center space-x-3">
       <div class="bg-purple-800 p-2 rounded-lg font-black text-sm tracking-wider">G</div>
-      <h1 class="text-lg font-bold tracking-wide">GrowMore Store</h1>
+      <h1 class="text-lg font-bold tracking-wide">GrowMore</h1>
       <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Web Control Panel</span>
     </div>
     
@@ -119,7 +119,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
-                <p class="text-xs text-gray-400">Live inventory, pricing updates, and best-seller tags for GrowMore Store.</p>
+                <p class="text-xs text-gray-400">Live inventory, pricing updates, and best-seller tags for GrowMore.</p>
               </div>
               <button onclick="openModal()" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition">
                 + Add New Product
@@ -183,7 +183,7 @@
           <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
             <div>
               <h2 class="text-xl font-bold text-purple-950">Customer Live Orders & Details</h2>
-              <p class="text-xs text-gray-400">Manage shipping status, view ordered products with images, or delete orders.</p>
+              <p class="text-xs text-gray-400">Manage shipping status, payment methods, view ordered products with images, or delete orders.</p>
             </div>
             <div id="orders-list" class="space-y-4"></div>
           </section>
@@ -984,6 +984,17 @@
         container.innerHTML = allOrders.map(o => {
           let isExpanded = !!expandedOrders[o.id];
           let currentStatus = o.status || 'Pending';
+          let paymentMethod = o.payment_method || 'Cash on Delivery (COD)';
+
+          // Payment Badge styling based on user selection
+          let paymentBadgeHtml = `<span class="bg-brown-100 text-brown-800 font-bold px-2 py-0.5 rounded text-[11px]">COD</span>`;
+          if (paymentMethod === 'Easypaisa') {
+            paymentBadgeHtml = `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[11px]">💚 Easypaisa (Verify WhatsApp Screenshot)</span>`;
+          } else if (paymentMethod === 'JazzCash') {
+            paymentBadgeHtml = `<span class="bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded text-[11px]">🧡 JazzCash (Verify WhatsApp Screenshot)</span>`;
+          } else {
+            paymentBadgeHtml = `<span class="bg-gray-100 text-gray-800 font-bold px-2 py-0.5 rounded text-[11px]">📦 ${paymentMethod}</span>`;
+          }
 
           let itemsHtml = '';
           try {
@@ -1030,6 +1041,7 @@
                   <span class="text-purple-700 font-black text-base">Order #${o.id}</span>
                   <span class="text-gray-500 text-xs hidden sm:inline">👤 ${o.customer_name}</span>
                   <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full font-bold text-[10px]">${currentStatus}</span>
+                  ${paymentMethod !== 'Cash on Delivery (COD)' ? `<span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-[10px] font-bold">📱 ${paymentMethod}</span>` : ''}
                 </div>
                 <div>
                   <span class="text-purple-700 text-xs font-bold bg-purple-100 px-3 py-1.5 rounded-lg">${isExpanded ? '▲ Hide Details' : '▼ View Details'}</span>
@@ -1047,9 +1059,9 @@
                       <div class="font-bold text-gray-900 text-sm">✉️ Email: <span class="font-normal text-purple-700">${o.customer_email || 'Not Provided'}</span></div>
                     </div>
                     <div class="flex flex-col items-end space-y-2">
-                      <div class="text-right">
+                      <div class="text-right space-y-1">
                         <div class="font-black text-purple-900 text-base">Total: PKR ${o.total_amount}</div>
-                        <div class="text-[11px] font-bold text-gray-500 uppercase">Cash on Delivery</div>
+                        <div>${paymentBadgeHtml}</div>
                       </div>
                       <div class="pdf-hide-status flex items-center space-x-2 pt-1">
                         <span class="text-xs font-bold text-gray-500">Status:</span>
