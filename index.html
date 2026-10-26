@@ -220,6 +220,21 @@
         <!-- Right 1 Column -->
         <div class="space-y-6">
           
+          <!-- Notification Sound Settings Widget -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+            <h3 class="font-bold text-purple-950 text-xs uppercase tracking-wider">🎵 Custom Order Sound</h3>
+            <p class="text-[11px] text-gray-500">Apne laptop se koi bhi MP3 file select karein jo naye order par baje gi.</p>
+            <div>
+              <input type="file" id="custom-mp3-file" accept="audio/mp3, audio/*" class="w-full text-xs border p-2 rounded-lg bg-gray-50">
+            </div>
+            <button onclick="saveCustomSound()" class="w-full bg-purple-900 hover:bg-purple-800 text-white font-bold py-2 rounded-xl text-xs transition">
+              💾 Save Sound
+            </button>
+            <button onclick="testCustomSound()" class="w-full bg-gray-100 hover:bg-gray-200 text-purple-900 font-bold py-1.5 rounded-xl text-xs transition">
+              ▶️ Test Sound
+            </button>
+          </div>
+
           <!-- Live Orders Quick Widget -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
             <div class="flex justify-between items-center">
@@ -422,13 +437,44 @@
       }
     }
 
-    // Custom MP3 Notification Sound Function
+    // Save Custom MP3 file to Browser Storage from Laptop
+    function saveCustomSound() {
+      const fileInput = document.getElementById('custom-mp3-file');
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            localStorage.setItem('custom_order_mp3', e.target.result);
+            alert('Custom MP3 Notification Sound saved successfully! ✅');
+          } catch (err) {
+            alert('File size too large for browser storage. Please select a smaller MP3 file.');
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Pehle apne laptop se koi MP3 file select karein!');
+      }
+    }
+
+    // Test Custom Sound
+    function testCustomSound() {
+      playNotificationSound();
+    }
+
+    // Play Notification Sound Function
     function playNotificationSound() {
       try {
-        // Aap yahan apni pasand ki kisi bhi MP3 file ka link daal sakte hain
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audio.volume = 1.0;
-        audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+        const savedAudioBase64 = localStorage.getItem('custom_order_mp3');
+        let audioToPlay;
+        if (savedAudioBase64) {
+          audioToPlay = new Audio(savedAudioBase64);
+        } else {
+          // Default sound agar koi custom file upload na ki ho
+          audioToPlay = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        }
+        audioToPlay.volume = 1.0;
+        audioToPlay.play().catch(e => console.log("Audio play blocked by browser:", e));
       } catch (e) {
         console.log("Audio error:", e);
       }
