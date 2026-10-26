@@ -19,6 +19,11 @@
     </div>
     
     <div class="flex items-center space-x-4">
+      <!-- Sound Enable Button for Browser Autoplay Policy -->
+      <button onclick="enableSoundAlerts()" id="sound-alert-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow transition flex items-center space-x-1 animate-bounce">
+        <span>🔔 Enable Sound Alerts</span>
+      </button>
+
       <div class="hidden md:flex items-center space-x-2 bg-purple-900 px-3 py-1.5 rounded-full text-xs font-semibold text-emerald-400">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span>Store Live & Syncing</span>
@@ -399,12 +404,38 @@
     let currentExtraImages = [];
     let currentActiveTab = 'products';
     let expandedOrders = {};
-    let previousOrderCount = null; // Track order count for notification sound
+    let previousOrderCount = null;
+    let audioCtx = null;
 
-    // Notification Sound Function using Web Audio API (No external file needed)
+    // Enable Sound Alerts function triggered by user click (Solves browser autoplay policy)
+    function enableSoundAlerts() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        // Play a quick test beep sound
+        playNotificationSound();
+        
+        const btn = document.getElementById('sound-alert-btn');
+        btn.classList.remove('animate-bounce', 'bg-emerald-600');
+        btn.classList.add('bg-purple-700');
+        btn.innerHTML = '<span>🔊 Sound Enabled ✅</span>';
+      } catch (e) {
+        console.log("Audio activation error:", e);
+      }
+    }
+
+    // Notification Sound Function
     function playNotificationSound() {
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
 
@@ -412,14 +443,14 @@
         oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
         oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
 
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
 
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
         oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.5);
+        oscillator.stop(audioCtx.currentTime + 0.6);
       } catch (e) {
         console.log("Audio play error:", e);
       }
@@ -980,7 +1011,6 @@
       const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
       const newOrdersList = data || [];
 
-      // Check if new order arrived and play sound
       if (previousOrderCount !== null && newOrdersList.length > previousOrderCount) {
         playNotificationSound();
       }
