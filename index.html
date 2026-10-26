@@ -405,17 +405,13 @@
     let currentActiveTab = 'products';
     let expandedOrders = {};
     let previousOrderCount = null;
-    let audioCtx = null;
+    let soundEnabled = false;
 
-    // Enable Sound Alerts function triggered by user click (Solves browser autoplay policy)
+    // Enable Sound Alerts function triggered by user click
     function enableSoundAlerts() {
       try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        // Play a quick test beep sound
-        playNotificationSound();
+        soundEnabled = true;
+        playNotificationSound(); // Test play
         
         const btn = document.getElementById('sound-alert-btn');
         btn.classList.remove('animate-bounce', 'bg-emerald-600');
@@ -426,33 +422,15 @@
       }
     }
 
-    // Notification Sound Function
+    // Custom MP3 Notification Sound Function
     function playNotificationSound() {
       try {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
-        oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
-
-        gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.6);
+        // Aap yahan apni pasand ki kisi bhi MP3 file ka link daal sakte hain
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.volume = 1.0;
+        audio.play().catch(e => console.log("Audio play blocked by browser:", e));
       } catch (e) {
-        console.log("Audio play error:", e);
+        console.log("Audio error:", e);
       }
     }
 
@@ -488,7 +466,9 @@
 
       dbClient.channel('public:orders')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
-          playNotificationSound();
+          if (soundEnabled) {
+            playNotificationSound();
+          }
           loadOrders();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
@@ -1012,7 +992,9 @@
       const newOrdersList = data || [];
 
       if (previousOrderCount !== null && newOrdersList.length > previousOrderCount) {
-        playNotificationSound();
+        if (soundEnabled) {
+          playNotificationSound();
+        }
       }
       previousOrderCount = newOrdersList.length;
       allOrders = newOrdersList;
@@ -1174,7 +1156,9 @@
       if (data) {
         const newOrdersList = data;
         if (previousOrderCount !== null && newOrdersList.length > previousOrderCount) {
-          playNotificationSound();
+          if (soundEnabled) {
+            playNotificationSound();
+          }
         }
         previousOrderCount = newOrdersList.length;
         allOrders = newOrdersList;
