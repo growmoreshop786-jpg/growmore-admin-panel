@@ -169,24 +169,21 @@
       await loadProducts();
     };
 
+    // Official Supabase JS Storage Upload Method
     async function uploadFileToSupabaseDirect(file) {
       const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/banners/${fileName}`;
       
-      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/banners/${fileName}`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'x-upsert': 'true'
-        },
-        body: file
-      });
+      const { data, error } = await dbClient.storage
+        .from('banners')
+        .upload(fileName, file, { upsert: true });
 
-      if (!response.ok) {
-        throw new Error('Upload Failed');
+      if (error) {
+        console.error('Supabase Storage Upload Error:', error);
+        throw new Error(error.message || 'Upload Failed');
       }
-      return uploadUrl;
+
+      const { data: publicData } = dbClient.storage.from('banners').getPublicUrl(fileName);
+      return publicData.publicUrl;
     }
 
     async function loadCollectionsFromSupabase() {
@@ -233,7 +230,7 @@
         collectionsList[index].image = picUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
-        alert('Collection Picture Updated! ✅');
+        alert('Collection Picture Updated Successfully! ✅');
       } catch (e) {
         alert('Upload Error: ' + e.message);
       }
