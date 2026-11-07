@@ -3,320 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GrowMore Store - Web Admin Panel</title>
+  <title>GrowMore Store - Web Control Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
-  <!-- Top Navigation Bar -->
+  <!-- Top Header -->
   <header class="bg-purple-950 text-white px-6 py-3 shadow-md flex justify-between items-center">
     <div class="flex items-center space-x-3">
-      <div class="bg-purple-800 p-2 rounded-lg font-black text-sm tracking-wider">G</div>
-      <h1 class="text-lg font-bold tracking-wide">GrowMore</h1>
-      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Web Control Panel</span>
+      <div class="bg-purple-800 p-2 rounded-lg font-black text-sm">GM</div>
+      <h1 class="text-lg font-bold">GrowMore</h1>
+      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Light Control Panel</span>
     </div>
-    
-    <div class="flex items-center space-x-4">
-      <button onclick="enableSoundAlerts()" id="sound-alert-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow transition flex items-center space-x-1 animate-bounce">
-        <span>🔔 Enable Sound Alerts</span>
+    <div class="flex items-center space-x-3">
+      <button onclick="openModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+        + Add Product
       </button>
-
-      <div class="hidden md:flex items-center space-x-2 bg-purple-900 px-3 py-1.5 rounded-full text-xs font-semibold text-emerald-400">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>Store Live & Syncing</span>
-      </div>
-      <button onclick="openModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition flex items-center space-x-1">
-        <span>+ Add Product</span>
+      <button onclick="openAddCategoryModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+        + Add Collection
       </button>
-      <div class="flex items-center space-x-2 bg-purple-900 px-3 py-1.5 rounded-lg text-xs font-bold">
-        <span>Live Dashboard</span>
-      </div>
-      <div class="w-8 h-8 rounded-full bg-purple-800 flex items-center justify-center font-bold text-xs border border-purple-600">AD</div>
     </div>
   </header>
 
-  <!-- Main Dashboard Wrapper -->
   <div class="flex min-h-[calc(100vh-60px)]">
-    
     <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-sm p-4 space-y-6 flex-shrink-0 hidden lg:block">
-      <div>
-        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">Catalog & Operations</div>
-        <div class="space-y-1">
-          <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center transition">
-            <span>📦 Products Catalog</span>
-            <span id="sidebar-product-count" class="bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full text-[10px]">...</span>
-          </button>
-          <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
-            <span>🏷️ Collections & Pictures</span>
-            <span id="sidebar-collection-count" class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">...</span>
-          </button>
-          <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
-            <span>🖼️ Banner Sliders</span>
-            <span id="sidebar-banner-count" class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px]">...</span>
-          </button>
-          <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
-            <span>🛒 Live Orders & Details</span>
-            <span id="sidebar-order-count" class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold">New</span>
-          </button>
-          <button onclick="switchTab('users')" id="tab-users" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
-            <span>👥 Registered Users</span>
-            <span id="sidebar-user-count" class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold">...</span>
-          </button>
-          <button onclick="switchTab('settings')" id="tab-settings" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center transition">
-            <span>⚙️ Settings & Sound</span>
-          </button>
-        </div>
-      </div>
+    <aside class="w-64 bg-white shadow-sm p-4 space-y-3">
+      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Catalog</div>
+      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between">
+        <span>📦 Products Catalog</span>
+        <span id="sidebar-product-count" class="bg-purple-200 px-2 rounded-full text-[10px]">0</span>
+      </button>
+      <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+        <span>🏷️ Collections & Pictures</span>
+        <span id="sidebar-collection-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+      </button>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 p-6 space-y-6 overflow-y-auto">
+    <!-- Main Section -->
+    <main class="flex-1 p-6 space-y-6">
       
-      <!-- Top Analytics Summary Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-1">
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Sales (Month)</div>
-          <div id="metric-total-sales" class="text-xl font-black text-purple-950">PKR 0</div>
-          <div class="text-[11px] font-semibold text-emerald-600">Real-time database revenue</div>
+      <!-- Products Section -->
+      <section id="section-products" class="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
         </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-1">
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Orders</div>
-          <div id="metric-total-orders" class="text-xl font-black text-purple-950">0 Orders</div>
-          <div id="metric-pending-orders" class="text-[11px] font-semibold text-amber-600">⚡ 0 pending dispatch</div>
+        <div id="admin-category-filters" class="flex flex-wrap gap-2 pb-2 border-b"></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b text-[11px] font-bold text-gray-400 uppercase">
+                <th class="pb-3 px-2">Image</th>
+                <th class="pb-3 px-2">Title</th>
+                <th class="pb-3 px-2">Category</th>
+                <th class="pb-3 px-2">Price</th>
+                <th class="pb-3 px-2">Best Seller</th>
+                <th class="pb-3 px-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-list" class="divide-y divide-gray-50">
+              <tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Loading products...</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-1">
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Active Products</div>
-          <div id="active-products-count" class="text-xl font-black text-purple-950">Loading...</div>
-          <div id="active-collections-info" class="text-[11px] font-semibold text-gray-500">Across collections</div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-1">
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Order Value</div>
-          <div id="metric-avg-order" class="text-xl font-black text-purple-950">PKR 0</div>
-          <div class="text-[11px] font-semibold text-gray-500">4.8 ★ store satisfaction</div>
-        </div>
-      </div>
+      </section>
 
-      <!-- Main Dashboard Grid Content -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 space-y-6">
-          
-          <!-- Products Section -->
-          <section id="section-products" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
-                <p class="text-xs text-gray-400">Live inventory and pricing updates for GrowMore.</p>
-              </div>
-              <button onclick="openModal()" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow transition">
-                + Add New Product
-              </button>
-            </div>
-
-            <div id="admin-category-filters" class="flex flex-wrap gap-2 items-center pb-2 border-b border-gray-100"></div>
-            
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase">
-                    <th class="pb-3 px-2">Photo</th>
-                    <th class="pb-3 px-2">Title & Model</th>
-                    <th class="pb-3 px-2">Collection</th>
-                    <th class="pb-3 px-2">Price</th>
-                    <th class="pb-3 px-2">Best Seller</th>
-                    <th class="pb-3 px-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="products-list" class="divide-y divide-gray-50">
-                  <tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Loading products...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- Collections Section -->
-          <section id="section-collections" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div class="flex justify-between items-center">
-              <div>
-                <h2 class="text-xl font-bold text-purple-950">Manage Collections & Pictures</h2>
-              </div>
-              <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
-                + Add New Collection
-              </button>
-            </div>
-            <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-          </section>
-
-          <!-- Banner Sliders Section -->
-          <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div class="flex justify-between items-center">
-              <div>
-                <h2 class="text-xl font-bold text-purple-950">Manage Home Banners</h2>
-              </div>
-              <button onclick="openAddBannerModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
-                + Add New Banner
-              </button>
-            </div>
-            <div id="banners-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-          </section>
-
-          <!-- Live Orders Section -->
-          <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div>
-              <h2 class="text-xl font-bold text-purple-950">Customer Live Orders & Details</h2>
-            </div>
-            <div id="orders-list" class="space-y-4"></div>
-          </section>
-
-          <!-- Registered Users Section -->
-          <section id="section-users" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div>
-              <h2 class="text-xl font-bold text-purple-950">Registered Users List</h2>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase">
-                    <th class="pb-3 px-2">Name</th>
-                    <th class="pb-3 px-2">Email</th>
-                    <th class="pb-3 px-2">Registration Date</th>
-                  </tr>
-                </thead>
-                <tbody id="registered-users-list" class="divide-y divide-gray-50">
-                  <tr><td colspan="3" class="p-6 text-center text-gray-400 text-xs">Loading...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- Settings & Sound Section -->
-          <section id="section-settings" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-            <div>
-              <h2 class="text-xl font-bold text-purple-950">⚙️ Notification Sound Settings</h2>
-            </div>
-            <div class="bg-purple-50 p-5 rounded-xl border border-purple-200 space-y-4 max-w-lg">
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-purple-950 block">Choose MP3 Audio File</label>
-                <input type="file" id="custom-mp3-file" accept="audio/mp3, audio/*" class="w-full text-xs border p-2 rounded-lg bg-white">
-              </div>
-              <div class="flex space-x-2 pt-2">
-                <button onclick="saveCustomSound()" class="flex-1 bg-purple-900 text-white font-bold py-2 rounded-xl text-xs">💾 Save Sound</button>
-                <button onclick="testCustomSound()" class="flex-1 bg-white border border-purple-300 text-purple-900 font-bold py-2 rounded-xl text-xs">▶️ Test Sound</button>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- Right 1 Column -->
-        <div class="space-y-6">
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-            <div class="flex justify-between items-center">
-              <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h3 class="font-bold text-purple-950 text-sm">Live Orders Feed</h3>
-              </div>
-              <a href="#" onclick="switchTab('orders')" class="text-xs text-purple-700 font-bold hover:underline">View All</a>
-            </div>
-            <div id="quick-orders-list" class="space-y-3 text-xs">
-              <p class="text-gray-400 text-xs">Loading live orders...</p>
-            </div>
+      <!-- Collections Section -->
+      <section id="section-collections" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
+            <p class="text-xs text-gray-400">Upload collection images directly from your laptop.</p>
           </div>
+          <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
+            + New Collection
+          </button>
         </div>
-      </div>
+        <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal -->
-  <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
-      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
-      <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
-        <input type="hidden" id="product-id">
+  <!-- Add Product Modal -->
+  <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+      <h3 class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
+      <form onsubmit="saveProduct(event)" class="space-y-3">
         <div>
-          <label class="text-xs font-semibold text-gray-700 block mb-1">Main Cover Image</label>
-          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold block mb-1">Product Cover Image</label>
+          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs" required>
         </div>
-
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-xs font-semibold text-gray-600">Product Title</label>
-            <input type="text" id="title" required class="w-full p-2 border rounded-lg text-sm">
+            <label class="text-xs font-semibold">Title</label>
+            <input type="text" id="title" required class="w-full p-2 border rounded-lg text-xs">
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-600">Collection / Category</label>
-            <select id="category" class="w-full p-2 border rounded-lg text-sm"></select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="text-xs font-semibold text-gray-600">Price (PKR)</label>
-            <input type="number" id="price" required class="w-full p-2 border rounded-lg text-sm">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-gray-600">Old Price (Opt)</label>
-            <input type="number" id="old-price" class="w-full p-2 border rounded-lg text-sm">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-gray-600">Rating</label>
-            <input type="text" id="rating" class="w-full p-2 border rounded-lg text-sm" value="4.8">
+            <label class="text-xs font-semibold">Category</label>
+            <select id="category-select" class="w-full p-2 border rounded-lg text-xs"></select>
           </div>
         </div>
-
-        <div class="bg-purple-50 p-3 rounded-lg border border-purple-200 flex items-center justify-between">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-xs font-bold text-purple-950 block">Mark as Best Seller Product 🌟</label>
+            <label class="text-xs font-semibold">Price (PKR)</label>
+            <input type="number" id="price" required class="w-full p-2 border rounded-lg text-xs">
           </div>
-          <input type="checkbox" id="is-best-seller" class="w-5 h-5 accent-purple-900 cursor-pointer">
+          <div>
+            <label class="text-xs font-semibold">Rating</label>
+            <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-xs">
+          </div>
         </div>
-
-        <div>
-          <label class="text-xs font-semibold text-gray-600">Description</label>
-          <textarea id="description" rows="2" class="w-full p-2 border rounded-lg text-sm"></textarea>
+        <div class="flex items-center space-x-2 pt-2">
+          <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
+          <label class="text-xs font-bold text-purple-950">Show in Best Sellers 🌟</label>
         </div>
-
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-200">Cancel</button>
-          <button type="submit" class="px-5 py-2 text-sm rounded-lg bg-purple-900 text-white font-semibold">Save Product</button>
+        <div class="flex justify-end space-x-2 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs bg-gray-200 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-xs bg-purple-900 text-white font-bold rounded-lg">Save Product</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- JavaScript Logic with Updated Flutter Supabase URL & Key -->
+  <!-- Add Collection Modal -->
+  <div id="category-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="text-lg font-bold text-purple-950 mb-3">Add Collection</h3>
+      <form onsubmit="saveNewCategory(event)" class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold block mb-1">Collection Name</label>
+          <input type="text" id="new-category-name" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g Earbuds">
+        </div>
+        <div>
+          <label class="text-xs font-semibold block mb-1">Background Picture (Laptop File)</label>
+          <input type="file" id="new-category-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeCategoryModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 text-xs bg-purple-900 text-white font-semibold rounded-lg">Save Collection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://expcwtfedhjmbhsnslkf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_B_0j8EGmc1a76LhW-GfjPw_3ff1KmK7';
-    const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let dbClient;
 
     let allProducts = [];
-    let allOrders = [];
-    let allUsers = [];
-    let selectedAdminCategory = 'All';
-    let currentImageUrl = '';
-    let currentExtraImages = [];
-    let soundEnabled = false;
-
-    function enableSoundAlerts() {
-      try {
-        soundEnabled = true;
-        playNotificationSound();
-        const btn = document.getElementById('sound-alert-btn');
-        btn.classList.remove('animate-bounce', 'bg-emerald-600');
-        btn.classList.add('bg-purple-700');
-        btn.innerHTML = '<span>🔊 Sound Enabled ✅</span>';
-      } catch (e) {}
-    }
-
-    function playNotificationSound() {
-      try {
-        const audioToPlay = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audioToPlay.play().catch(e => {});
-      } catch (e) {}
-    }
-
     let collectionsList = [
       { name: 'Earbuds', image: '' },
       { name: 'Power Bank', image: '' },
@@ -328,22 +163,17 @@
       { name: 'Neckbands', image: '' }
     ];
 
-    let bannersList = [
-      { title: 'GrowMore Tech & Gadgets', subtitle: '7 Days Replacement & Free Shipping', image: '' }
-    ];
-
     window.onload = async () => {
+      dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       await loadCollectionsFromSupabase();
       await loadProducts();
-      await loadOrders();
-      await loadRegisteredUsers();
     };
 
-    async function uploadFileToSupabaseDirect(file, bucketName) {
+    async function uploadFileToSupabaseDirect(file) {
       const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
+      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/banners/${fileName}`;
       
-      const response = await fetch(uploadUrl, {
+      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/banners/${fileName}`, {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_KEY,
@@ -354,9 +184,9 @@
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error('Upload Failed');
       }
-      return `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${fileName}`;
+      return uploadUrl;
     }
 
     async function loadCollectionsFromSupabase() {
@@ -366,71 +196,96 @@
           collectionsList = JSON.parse(data.value);
         }
       } catch (e) {}
-      renderCategoryFilters();
+
+      document.getElementById('sidebar-collection-count').innerText = collectionsList.length;
       renderCategoryDropdown();
+      renderCollectionsAdminGrid();
+    }
+
+    function renderCategoryDropdown() {
+      const select = document.getElementById('category-select');
+      select.innerHTML = collectionsList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    }
+
+    function renderCollectionsAdminGrid() {
+      const grid = document.getElementById('collections-grid');
+      grid.innerHTML = collectionsList.map((c, index) => `
+        <div class="bg-white p-4 rounded-xl shadow-sm border flex items-center space-x-3">
+          <div class="w-14 h-14 rounded-lg bg-gray-100 border overflow-hidden flex-shrink-0 flex items-center justify-center">
+            ${c.image ? `<img src="${c.image}" class="w-full h-full object-cover">` : `<span class="text-[10px] text-gray-400">No Pic</span>`}
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-purple-950 text-xs truncate">${c.name}</h4>
+            <label class="text-[10px] text-blue-600 font-bold cursor-pointer hover:underline">
+              📁 Upload Laptop Pic <input type="file" accept="image/*" class="hidden" onchange="uploadCollectionPicDirect(event, ${index})">
+            </label>
+          </div>
+          <button onclick="deleteCollection(${index})" class="text-red-500 font-bold text-xs p-2">🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    async function uploadCollectionPicDirect(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const picUrl = await uploadFileToSupabaseDirect(file);
+        collectionsList[index].image = picUrl;
+        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+        renderCollectionsAdminGrid();
+        alert('Collection Picture Updated! ✅');
+      } catch (e) {
+        alert('Upload Error: ' + e.message);
+      }
+    }
+
+    async function saveNewCategory(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-category-name').value.trim();
+      const file = document.getElementById('new-category-image').files[0];
+      let imgUrl = '';
+
+      if (file) {
+        try { imgUrl = await uploadFileToSupabaseDirect(file); } catch(err){}
+      }
+
+      if (name) {
+        collectionsList.push({ name, image: imgUrl });
+        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+        await loadCollectionsFromSupabase();
+      }
+      closeCategoryModal();
+    }
+
+    async function deleteCollection(index) {
+      if (confirm('Delete this collection?')) {
+        collectionsList.splice(index, 1);
+        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
+        loadCollectionsFromSupabase();
+      }
     }
 
     async function loadProducts() {
       const { data } = await dbClient.from('products').select('*').order('id', { ascending: false });
       allProducts = data || [];
-      document.getElementById('active-products-count').innerText = allProducts.length + ' Items';
       document.getElementById('sidebar-product-count').innerText = allProducts.length;
-      displayProducts();
-    }
-
-    async function loadRegisteredUsers() {
-      const { data } = await dbClient.from('users').select('*').order('created_at', { ascending: false });
-      allUsers = data || [];
-      document.getElementById('sidebar-user-count').innerText = allUsers.length;
-    }
-
-    async function loadOrders() {
-      const { data } = await dbClient.from('orders').select('*').order('id', { ascending: false });
-      allOrders = data || [];
-      document.getElementById('sidebar-order-count').innerText = allOrders.length + ' Orders';
-    }
-
-    function renderCategoryFilters() {
-      const container = document.getElementById('admin-category-filters');
-      container.innerHTML = `<button onclick="filterAdminCategory('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900 text-white">All</button>` +
-        collectionsList.map(c => `<button onclick="filterAdminCategory('${c.name}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">${c.name}</button>`).join('');
-    }
-
-    function renderCategoryDropdown() {
-      const select = document.getElementById('category');
-      select.innerHTML = collectionsList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    }
-
-    function filterAdminCategory(cat) {
-      selectedAdminCategory = cat;
       displayProducts();
     }
 
     function displayProducts() {
       const container = document.getElementById('products-list');
-      let filtered = selectedAdminCategory === 'All' ? allProducts : allProducts.filter(p => p.category?.toLowerCase() === selectedAdminCategory.toLowerCase());
-
-      if (!filtered.length) {
-        container.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">No products found. Add products from the admin panel!</td></tr>`;
+      if (!allProducts.length) {
+        container.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">No products found. Add products above!</td></tr>`;
         return;
       }
-
-      container.innerHTML = filtered.map(p => `
-        <tr class="hover:bg-gray-50/50 text-xs">
-          <td class="py-3 px-2"><img src="${p.image_url || ''}" class="w-10 h-10 object-contain bg-gray-50 rounded border"></td>
-          <td class="py-3 px-2">
-            <div class="font-bold text-gray-800">${p.title}</div>
-          </td>
-          <td class="py-3 px-2"><span class="bg-purple-50 text-purple-800 text-[10px] px-2.5 py-1 rounded-full font-bold">${p.category}</span></td>
-          <td class="py-3 px-2"><div class="font-bold text-purple-950">PKR ${p.price}</div></td>
-          <td class="py-3 px-2">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${p.is_best_seller ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'}">
-              ${p.is_best_seller ? '🌟 Best Seller' : 'Regular'}
-            </span>
-          </td>
-          <td class="py-3 px-2 text-right space-x-2">
-            <button onclick="deleteProduct(${p.id})" class="text-red-600 font-bold hover:underline">Delete</button>
-          </td>
+      container.innerHTML = allProducts.map(p => `
+        <tr class="text-xs">
+          <td class="py-2 px-2"><img src="${p.image_url || ''}" class="w-9 h-9 object-cover rounded border"></td>
+          <td class="py-2 px-2 font-bold">${p.title}</td>
+          <td class="py-2 px-2"><span class="bg-purple-100 text-purple-900 px-2 py-0.5 rounded-full text-[10px]">${p.category}</span></td>
+          <td class="py-2 px-2 font-bold text-purple-950">PKR ${p.price}</td>
+          <td class="py-2 px-2">${p.is_best_seller ? '🌟 Yes' : 'No'}</td>
+          <td class="py-2 px-2 text-right"><button onclick="deleteProduct(${p.id})" class="text-red-600 font-bold">Delete</button></td>
         </tr>
       `).join('');
     }
@@ -438,31 +293,24 @@
     async function saveProduct(event) {
       event.preventDefault();
       const title = document.getElementById('title').value.trim();
-      const category = document.getElementById('category').value;
+      const category = document.getElementById('category-select').value;
       const price = parseFloat(document.getElementById('price').value);
       const rating = parseFloat(document.getElementById('rating').value) || 4.8;
       const isBestSeller = document.getElementById('is-best-seller').checked;
-      const description = document.getElementById('description').value.trim();
-      const imageFile = document.getElementById('product-image').files[0];
-      
+      const file = document.getElementById('product-image').files[0];
+
       let imageUrl = '';
-      if (imageFile) {
-        try {
-          imageUrl = await uploadFileToSupabaseDirect(imageFile, 'banners');
-        } catch (error) {
-          alert('Image Upload Error');
-          return;
-        }
+      if (file) {
+        try { imageUrl = await uploadFileToSupabaseDirect(file); } catch(e){}
       }
 
-      await dbClient.from('products').insert([{ title, category, price, rating, is_best_seller: isBestSeller, description, image_url: imageUrl }]);
+      await dbClient.from('products').insert([{ title, category, price, rating, is_best_seller: isBestSeller, image_url: imageUrl }]);
       closeModal();
       loadProducts();
-      alert('Product added successfully!');
     }
 
     async function deleteProduct(id) {
-      if (confirm('Delete product?')) {
+      if (confirm('Delete Product?')) {
         await dbClient.from('products').delete().eq('id', id);
         loadProducts();
       }
@@ -471,19 +319,11 @@
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
-      document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
-      document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
-      document.getElementById('section-users').classList.toggle('hidden', tab !== 'users');
-      document.getElementById('section-settings').classList.toggle('hidden', tab !== 'settings');
     }
-
-    function openModal() {
-      document.getElementById('product-form').reset();
-      document.getElementById('product-modal').classList.remove('hidden');
-    }
-    function closeModal() {
-      document.getElementById('product-modal').classList.add('hidden');
-    }
+    function openModal() { document.getElementById('product-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+    function openAddCategoryModal() { document.getElementById('category-modal').classList.remove('hidden'); }
+    function closeCategoryModal() { document.getElementById('category-modal').classList.add('hidden'); }
   </script>
 </body>
 </html>
