@@ -175,17 +175,18 @@
       await loadProducts();
     };
 
-    // Auto-upload file to Supabase Storage and get public URL
+    // Auto-upload file to Supabase Storage 'products_images' bucket and get public URL
     async function uploadToSupabaseStorage(file, folder) {
       try {
         const fileExt = file.name.split('.').pop();
         const fileName = `${folder}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { data, error } = await dbClient.storage.from('products').upload(filePath, file);
+        // Using your exact bucket name from Supabase: products_images
+        const { data, error } = await dbClient.storage.from('products_images').upload(filePath, file);
         if (error) throw error;
 
-        const { data: publicUrlData } = dbClient.storage.from('products').getPublicUrl(filePath);
+        const { data: publicUrlData } = dbClient.storage.from('products_images').getPublicUrl(filePath);
         return publicUrlData.publicUrl;
       } catch (e) {
         throw new Error('Storage Upload Failed: ' + e.message);
