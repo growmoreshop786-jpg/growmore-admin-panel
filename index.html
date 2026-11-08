@@ -73,7 +73,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
-            <p class="text-xs text-gray-400">Upload collection images or paste direct Image URLs.</p>
+            <p class="text-xs text-gray-400">Choose file to update collection picture automatically.</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
             + New Collection
@@ -91,9 +91,8 @@
       <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
         <div>
-          <label class="text-xs font-semibold block mb-1">Product Cover Image (File or Direct URL)</label>
-          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs mb-2">
-          <input type="text" id="product-image-url" placeholder="Or paste direct Image URL here (https://...)" class="w-full p-2 border rounded-lg text-xs">
+          <label class="text-xs font-semibold block mb-1">Product Cover Image (Select File)</label>
+          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -141,9 +140,8 @@
           <input type="text" id="new-category-name" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g Earbuds">
         </div>
         <div>
-          <label class="text-xs font-semibold block mb-1">Background Picture (File or URL)</label>
-          <input type="file" id="new-category-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs mb-2">
-          <input type="text" id="new-category-image-url" placeholder="Or paste image URL here" class="w-full p-2 border rounded-lg text-xs">
+          <label class="text-xs font-semibold block mb-1">Background Picture</label>
+          <input type="file" id="new-category-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
         </div>
         <div class="flex justify-end space-x-2 pt-2">
           <button type="button" onclick="closeCategoryModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
@@ -177,13 +175,21 @@
       await loadProducts();
     };
 
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
+    // Auto-upload file to Supabase Storage and get public URL
+    async function uploadToSupabaseStorage(file, folder) {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${folder}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { data, error } = await dbClient.storage.from('products').upload(filePath, file);
+        if (error) throw error;
+
+        const { data: publicUrlData } = dbClient.storage.from('products').getPublicUrl(filePath);
+        return publicUrlData.publicUrl;
+      } catch (e) {
+        throw new Error('Storage Upload Failed: ' + e.message);
+      }
     }
 
     async function loadCollectionsFromSupabase() {
@@ -233,35 +239,21 @@
           </div>
           <div class="flex-1 min-w-0">
             <h4 class="font-bold text-purple-950 text-xs truncate">${c.name}</h4>
-            <label class="text-[10px] text-blue-600 font-bold cursor-pointer hover:underline block">
-              📁 Upload File <input type="file" accept="image/*" class="hidden" onchange="uploadCollectionPicDirect(event, ${index})">
+            <label class="text-[10px] text-blue-600 font-bold cursor-pointer hover:underline">
+              📁 Change Pic <input type="file" accept="image/*" class="hidden" onchange="uploadCollectionPicDirect(event, ${index})">
             </label>
-            <input type="text" placeholder="Or paste URL" class="w-full text-[10px] border p-1 rounded mt-1" value="${c.image && c.image.startsWith('http') ? c.image : ''}" onchange="updateCollectionUrl(event, ${index})">
           </div>
           <button onclick="deleteCollection(${index})" class="text-red-500 font-bold text-xs p-2">🗑️</button>
         </div>
       `).join('');
     }
 
-    async function updateCollectionUrl(event, index) {
-      const url = event.target.value.trim();
-      if (!url) return;
-      try {
-        collectionsList[index].image = url;
-        await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
-        renderCollectionsAdminGrid();
-        alert('Collection Image URL Updated! ✅');
-      } catch (e) {
-        alert('Error: ' + e.message);
-      }
-    }
-
     async function uploadCollectionPicDirect(event, index) {
       const file = event.target.files[0];
       if (!file) return;
       try {
-        const base64Img = await fileToBase64(file);
-        collectionsList[index].image = base64Img;
+        const publicUrl = await uploadToSupabaseStorage(file, 'collection');
+        collectionsList[index].image = publicUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
         alert('Collection Picture Updated! ✅');
@@ -274,11 +266,10 @@
       e.preventDefault();
       const name = document.getElementById('new-category-name').value.trim();
       const file = document.getElementById('new-category-image').files[0];
-      const urlInput = document.getElementById('new-category-image-url').value.trim();
-      let imgUrl = urlInput;
+      let imgUrl = '';
 
       if (file) {
-        try { imgUrl = await fileToBase64(file); } catch(err){}
+        try { imgUrl = await uploadToSupabaseStorage(file, 'collection'); } catch(err){ alert(err.message); return; }
       }
 
       if (name) {
@@ -342,7 +333,7 @@
     async function saveProduct(event) {
       event.preventDefault();
       const btn = document.getElementById('save-product-btn');
-      btn.innerText = "Saving... ⏳";
+      btn.innerText = "Uploading & Saving... ⏳";
       btn.disabled = true;
 
       try {
@@ -354,17 +345,12 @@
         const rating = parseFloat(document.getElementById('rating').value) || 4.8;
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const file = document.getElementById('product-image').files[0];
-        const urlInput = document.getElementById('product-image-url').value.trim();
 
         let existingProduct = id ? allProducts.find(p => p.id == id) : null;
         let imageUrl = existingProduct ? existingProduct.image_url : '';
 
-        if (urlInput) {
-          imageUrl = urlInput;
-        }
-
         if (file) {
-          imageUrl = await fileToBase64(file);
+          imageUrl = await uploadToSupabaseStorage(file, 'product');
         }
 
         const productData = { 
@@ -410,7 +396,6 @@
       document.getElementById('rating').value = p.rating || 4.8;
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-image').value = '';
-      document.getElementById('product-image-url').value = p.image_url && p.image_url.startsWith('http') ? p.image_url : '';
 
       document.getElementById('modal-title').innerText = 'Edit Product';
       document.getElementById('product-modal').classList.remove('hidden');
