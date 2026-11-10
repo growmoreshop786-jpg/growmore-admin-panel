@@ -14,7 +14,7 @@
     <div class="flex items-center space-x-3">
       <div class="bg-purple-800 p-2 rounded-lg font-black text-sm">GM</div>
       <h1 class="text-lg font-bold">GrowMore</h1>
-      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Direct)</span>
+      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Worker Connected)</span>
     </div>
     <div class="flex items-center space-x-3">
       <button onclick="openModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
@@ -72,7 +72,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
-            <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 bucket.</p>
+            <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 via Worker.</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
             + New Collection
@@ -150,21 +150,15 @@
     </div>
   </div>
 
-  <!-- Module Script for Cloudflare R2 Direct Upload -->
-  <script type="module">
-    import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.500.0";
-
+  <!-- Script for Cloudflare Worker & Supabase Integration -->
+  <script>
     const SUPABASE_URL = 'https://expcwtfedhjmbhsnslkf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_B_0j8EGmc1a76LhW-GfjPw_3ff1KmK7';
     
-    const R2_ACCOUNT_ID = '7a4d159847cdc2e37acbb1309c';
-    const R2_ACCESS_KEY_ID = '6c0d348deb8a321e782871652ef3c752';
-    const R2_SECRET_ACCESS_KEY = '6b5e5a469deed56b4bd69c74a48c8bc0570a0cf617df96e9c947c0e8e418620d';
-    const R2_BUCKET_NAME = 'growmoreapp';
-    const R2_PUBLIC_DOMAIN = 'https://pub-383f618e59654bcfa5acf2d19b5355ce.r2.dev';
+    // Your Cloudflare Worker URL
+    const WORKER_UPLOAD_URL = 'https://wandering-sea-3029.growmore-shop786.workers.dev';
 
     let dbClient;
-    let s3Client;
     let allProducts = [];
     let selectedAdminCategory = 'All';
     let collectionsList = [
@@ -180,39 +174,28 @@
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      
-      // Initialize S3 Client pointing to Cloudflare R2
-      s3Client = new S3Client({
-        region: 'auto',
-        endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId: R2_ACCESS_KEY_ID,
-          secretAccessKey: R2_SECRET_ACCESS_KEY
-        }
-      });
-
       await loadCollectionsFromSupabase();
       await loadProducts();
     };
 
-    // Direct Upload to Cloudflare R2
+    // Upload via Cloudflare Worker directly to R2
     async function uploadToCloudflareR2(file, folder) {
       try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+        const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const uploadCommand = new PutObjectCommand({
-          Bucket: R2_BUCKET_NAME,
-          Key: fileName,
-          Body: uint8Array,
-          ContentType: file.type,
+        const response = await fetch(WORKER_UPLOAD_URL, {
+          method: 'POST',
+          headers: {
+            'X-Folder': folder,
+            'X-Filename': filename,
+          },
+          body: file
         });
 
-        await s3Client.send(uploadCommand);
-        return `${R2_PUBLIC_DOMAIN}/${fileName}`;
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Upload failed');
+        return result.url;
       } catch (e) {
         throw new Error('R2 Upload Failed: ' + e.message);
       }
@@ -250,7 +233,7 @@
       `).join('');
     }
 
-    window.filterAdminCategory = function(cat) {
+    function filterAdminCategory(cat) {
       selectedAdminCategory = cat;
       renderCategoryFilters();
       displayProducts();
@@ -274,7 +257,7 @@
       `).join('');
     }
 
-    window.uploadCollectionPicDirect = async function(event, index) {
+    async function uploadCollectionPicDirect(event, index) {
       const file = event.target.files[0];
       if (!file) return;
       try {
@@ -282,13 +265,13 @@
         collectionsList[index].image = publicUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
-        alert('Collection Picture Uploaded to R2! ✅');
+        alert('Collection Picture Uploaded to R2 via Worker! ✅');
       } catch (e) {
         alert('Upload Error: ' + e.message);
       }
     }
 
-    window.saveNewCategory = async function(e) {
+    async function saveNewCategory(e) {
       e.preventDefault();
       const name = document.getElementById('new-category-name').value.trim();
       const file = document.getElementById('new-category-image').files[0];
@@ -306,7 +289,7 @@
       closeCategoryModal();
     }
 
-    window.deleteCollection = async function(index) {
+    async function deleteCollection(index) {
       if (confirm('Delete this collection?')) {
         collectionsList.splice(index, 1);
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
@@ -356,7 +339,7 @@
       `).join('');
     }
 
-    window.saveProduct = async function(event) {
+    async function saveProduct(event) {
       event.preventDefault();
       const btn = document.getElementById('save-product-btn');
       btn.innerText = "Uploading to R2... ⏳";
@@ -366,7 +349,7 @@
         const id = document.getElementById('product-id').value;
         const title = document.getElementById('title').value.trim();
         const category = document.getElementById('category-select').value;
-        const price = parseFloat(document.getElementById('price').value);
+        const price = parseFloat(document.getElementById('price.value') || document.getElementById('price').value);
         const oldPrice = document.getElementById('old-price').value ? parseFloat(document.getElementById('old-price').value) : null;
         const rating = parseFloat(document.getElementById('rating').value) || 4.8;
         const isBestSeller = document.getElementById('is-best-seller').checked;
@@ -411,7 +394,7 @@
       }
     }
 
-    window.editProduct = function(id) {
+    function editProduct(id) {
       const p = allProducts.find(item => item.id == id);
       if (!p) return;
       document.getElementById('product-id').value = p.id;
@@ -427,7 +410,7 @@
       document.getElementById('product-modal').classList.remove('hidden');
     }
 
-    window.deleteProduct = async function(id) {
+    async function deleteProduct(id) {
       if (confirm('Delete Product?')) {
         const { error } = await dbClient.from('products').delete().eq('id', id);
         if (error) {
@@ -438,7 +421,7 @@
       }
     }
 
-    window.switchTab = function(tab) {
+    function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
       
@@ -446,15 +429,15 @@
       document.getElementById('tab-collections').className = tab === 'collections' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between';
     }
 
-    window.openModal = function() { 
+    function openModal() { 
       document.getElementById('product-form-element').reset();
       document.getElementById('product-id').value = '';
       document.getElementById('modal-title').innerText = 'Add Product';
       document.getElementById('product-modal').classList.remove('hidden'); 
     }
-    window.closeModal = function() { document.getElementById('product-modal').classList.add('hidden'); }
-    window.openAddCategoryModal = function() { document.getElementById('category-modal').classList.remove('hidden'); }
-    window.closeCategoryModal = function() { document.getElementById('category-modal').classList.add('hidden'); }
+    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+    function openAddCategoryModal() { document.getElementById('category-modal').classList.remove('hidden'); }
+    function closeCategoryModal() { document.getElementById('category-modal').classList.add('hidden'); }
   </script>
 </body>
 </html>
