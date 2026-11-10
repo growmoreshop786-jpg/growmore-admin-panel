@@ -182,7 +182,6 @@
         const fileName = `${folder}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Using your exact bucket name from Supabase: products_images
         const { data, error } = await dbClient.storage.from('products_images').upload(filePath, file);
         if (error) throw error;
 
