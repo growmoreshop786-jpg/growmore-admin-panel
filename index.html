@@ -394,7 +394,7 @@
           const res = await dbClient.from('products').update(productData).eq('id', id);
           error = res.error;
         } else {
-          const res = await dbClient.from('products'].insert([productData]);
+          const res = await dbClient.from('products').insert([productData]);
           error = res.error;
         }
 
