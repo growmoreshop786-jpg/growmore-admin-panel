@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GrowMore Store - Web Control Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3.379.0/dist/aws-sdk-client-s3.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -14,7 +15,7 @@
     <div class="flex items-center space-x-3">
       <div class="bg-purple-800 p-2 rounded-lg font-black text-sm">GM</div>
       <h1 class="text-lg font-bold">GrowMore</h1>
-      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel</span>
+      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Connected)</span>
     </div>
     <div class="flex items-center space-x-3">
       <button onclick="openModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
@@ -42,7 +43,6 @@
 
     <!-- Main Section -->
     <main class="flex-1 p-6 space-y-6">
-      
       <!-- Products Section -->
       <section id="section-products" class="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
         <div class="flex justify-between items-center">
@@ -73,7 +73,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
-            <p class="text-xs text-gray-400">Choose file to update collection picture automatically.</p>
+            <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 bucket.</p>
           </div>
           <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
             + New Collection
@@ -156,6 +156,14 @@
     const SUPABASE_KEY = 'sb_publishable_B_0j8EGmc1a76LhW-GfjPw_3ff1KmK7';
     let dbClient;
 
+    // --- CLOUDFLARE R2 CREDENTIALS (INCORPORATED) ---
+    const R2_ACCOUNT_ID = '7a4d159847cdc2e37acbb1309c';
+    const R2_ACCESS_KEY_ID = '6c0d348deb8a321e782871652ef3c752';
+    const R2_SECRET_ACCESS_KEY = '6b5e5a469deed56b4bd69c74a48c8bc0570a0cf617df96e9c947c0e8e418620d';
+    const R2_BUCKET_NAME = 'growmoreapp';
+    const R2_PUBLIC_DOMAIN = 'https://pub-383f618e59654bcfa5acf2d19b5355ce.r2.dev';
+
+    let s3Client;
     let allProducts = [];
     let selectedAdminCategory = 'All';
     let collectionsList = [
@@ -171,24 +179,41 @@
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      // Initialize S3 Client for Cloudflare R2
+      s3Client = new aws.S3Client({
+        region: 'auto',
+        endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: R2_ACCESS_KEY_ID,
+          secretAccessKey: R2_SECRET_ACCESS_KEY
+        }
+      });
+
       await loadCollectionsFromSupabase();
       await loadProducts();
     };
 
-    // Auto-upload file to Supabase Storage 'products_images' bucket and get public URL
-    async function uploadToSupabaseStorage(file, folder) {
+    // Upload directly to Cloudflare R2 Bucket
+    async function uploadToCloudflareR2(file, folder) {
       try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${folder}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
 
-        const { data, error } = await dbClient.storage.from('products_images').upload(filePath, file);
-        if (error) throw error;
+        const uploadCommand = new aws.PutObjectCommand({
+          Bucket: R2_BUCKET_NAME,
+          Key: fileName,
+          Body: uint8Array,
+          ContentType: file.type,
+        });
 
-        const { data: publicUrlData } = dbClient.storage.from('products_images').getPublicUrl(filePath);
-        return publicUrlData.publicUrl;
+        await s3Client.send(uploadCommand);
+        return `${R2_PUBLIC_DOMAIN}/${fileName}`;
       } catch (e) {
-        throw new Error('Storage Upload Failed: ' + e.message);
+        throw new Error('R2 Upload Failed: ' + e.message);
       }
     }
 
@@ -252,11 +277,11 @@
       const file = event.target.files[0];
       if (!file) return;
       try {
-        const publicUrl = await uploadToSupabaseStorage(file, 'collection');
+        const publicUrl = await uploadToCloudflareR2(file, 'collection_image');
         collectionsList[index].image = publicUrl;
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
-        alert('Collection Picture Updated! ✅');
+        alert('Collection Picture Uploaded to R2! ✅');
       } catch (e) {
         alert('Upload Error: ' + e.message);
       }
@@ -269,7 +294,7 @@
       let imgUrl = '';
 
       if (file) {
-        try { imgUrl = await uploadToSupabaseStorage(file, 'collection'); } catch(err){ alert(err.message); return; }
+        try { imgUrl = await uploadToCloudflareR2(file, 'collection_image'); } catch(err){ alert(err.message); return; }
       }
 
       if (name) {
@@ -333,7 +358,7 @@
     async function saveProduct(event) {
       event.preventDefault();
       const btn = document.getElementById('save-product-btn');
-      btn.innerText = "Uploading & Saving... ⏳";
+      btn.innerText = "Uploading to R2... ⏳";
       btn.disabled = true;
 
       try {
@@ -350,7 +375,7 @@
         let imageUrl = existingProduct ? existingProduct.image_url : '';
 
         if (file) {
-          imageUrl = await uploadToSupabaseStorage(file, 'product');
+          imageUrl = await uploadToCloudflareR2(file, 'products_image');
         }
 
         const productData = { 
@@ -374,7 +399,7 @@
 
         if (error) throw error;
 
-        alert('Product Saved Successfully! ✅');
+        alert('Product Saved with R2 Image! ✅');
         closeModal();
         loadProducts();
       } catch (e) {
@@ -386,7 +411,7 @@
     }
 
     function editProduct(id) {
-      const p = allProducts.find(item => item.id == id);
+      const p = allProducts.all ? allProducts.find(item => item.id == id) : allProducts.find(item => item.id == id);
       if (!p) return;
       document.getElementById('product-id').value = p.id;
       document.getElementById('title').value = p.title || '';
