@@ -23,6 +23,9 @@
       <button onclick="openAddCategoryModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
         + Add Collection
       </button>
+      <button onclick="openAddBannerModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+        + Add Banner
+      </button>
     </div>
   </header>
 
@@ -37,6 +40,10 @@
       <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
         <span>🏷️ Collections & Pictures</span>
         <span id="sidebar-collection-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+      </button>
+      <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+        <span>🖼️ Banners & Slider Settings</span>
+        <span id="sidebar-banner-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
     </aside>
 
@@ -79,6 +86,33 @@
           </button>
         </div>
         <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- Banners & Slider Settings Section -->
+      <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-purple-950">Manage Banners & Auto-Slide Speed</h2>
+            <p class="text-xs text-gray-400">Upload 1 to 4 banners and set the slide timer duration.</p>
+          </div>
+          <button onclick="openAddBannerModal()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs">
+            + Add Banner
+          </button>
+        </div>
+
+        <!-- Timer Configuration Card -->
+        <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-purple-950 text-xs">Banner Auto-Slide Interval (Seconds)</h4>
+            <p class="text-[10px] text-gray-500">Kitne seconds ke baad banner khud change ho (e.g. 3 or 4 seconds)</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="number" id="banner-interval-input" value="3" min="1" max="15" class="w-16 p-2 border rounded-lg text-xs font-bold text-center">
+            <button onclick="saveBannerInterval()" class="bg-purple-900 text-white px-3 py-2 rounded-lg text-xs font-bold">Save Timer</button>
+          </div>
+        </div>
+
+        <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"></div>
       </section>
     </main>
   </div>
@@ -150,6 +184,23 @@
     </div>
   </div>
 
+  <!-- Add Banner Modal -->
+  <div id="banner-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="text-lg font-bold text-purple-950 mb-3">Add Banner (1 to 4)</h3>
+      <form onsubmit="saveNewBanner(event)" class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold block mb-1">Select Banner Image</label>
+          <input type="file" id="new-banner-image" accept="image/*" required class="w-full border p-2 rounded-lg text-xs">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeBannerModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
+          <button type="submit" id="save-banner-btn" class="px-4 py-1.5 text-xs bg-amber-600 text-white font-semibold rounded-lg">Upload Banner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Script for Cloudflare Worker & Supabase Integration -->
   <script>
     const SUPABASE_URL = 'https://expcwtfedhjmbhsnslkf.supabase.co';
@@ -171,10 +222,13 @@
       { name: 'Headphone', image: '' },
       { name: 'Neckbands', image: '' }
     ];
+    let bannersList = [];
+    let bannerInterval = 3;
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       await loadCollectionsFromSupabase();
+      await loadBannersFromSupabase();
       await loadProducts();
     };
 
@@ -213,6 +267,96 @@
       renderCategoryDropdown();
       renderCategoryFilters();
       renderCollectionsAdminGrid();
+    }
+
+    async function loadBannersFromSupabase() {
+      try {
+        const { data } = await dbClient.from('settings').select('value').eq('key', 'banners').maybeSingle();
+        if (data && data.value) {
+          const parsed = JSON.parse(data.value);
+          // Support both array of objects or objects containing interval
+          if (Array.isArray(parsed)) {
+            bannersList = parsed;
+          } else if (parsed && typeof parsed === 'object') {
+            bannersList = parsed.images || [];
+            bannerInterval = parsed.interval || 3;
+          }
+        }
+      } catch (e) {}
+
+      document.getElementById('sidebar-banner-count').innerText = bannersList.length;
+      document.getElementById('banner-interval-input').value = bannerInterval;
+      renderBannersAdminGrid();
+    }
+
+    async function saveBannersToSupabase() {
+      const payload = {
+        images: bannersList,
+        interval: parseInt(bannerInterval) || 3
+      };
+      await dbClient.from('settings').upsert({ key: 'banners', value: JSON.stringify(payload) });
+      document.getElementById('sidebar-banner-count').innerText = bannersList.length;
+      renderBannersAdminGrid();
+    }
+
+    async function saveBannerInterval() {
+      bannerInterval = parseInt(document.getElementById('banner-interval-input').value) || 3;
+      await saveBannersToSupabase();
+      alert('Banner Slider Timer Updated Successfully! ✅');
+    }
+
+    async function saveNewBanner(e) {
+      e.preventDefault();
+      if (bannersList.length >= 4) {
+        alert('Aap maximum 4 banners hi add kar sakte hain!');
+        return;
+      }
+      const file = document.getElementById('new-banner-image').files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('save-banner-btn');
+      btn.innerText = "Uploading... ⏳";
+      btn.disabled = true;
+
+      try {
+        const imgUrl = await uploadToCloudflareR2(file, 'banners');
+        bannersList.push({ image: imgUrl });
+        await saveBannersToSupabase();
+        closeBannerModal();
+        alert('Banner Uploaded Successfully! ✅');
+      } catch(err) {
+        alert(err.message);
+      } finally {
+        btn.innerText = "Upload Banner";
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteBanner(index) {
+      if (confirm('Delete this banner?')) {
+        bannersList.splice(index, 1);
+        await saveBannersToSupabase();
+      }
+    }
+
+    function renderBannersAdminGrid() {
+      const grid = document.getElementById('banners-grid');
+      if (!bannersList.length) {
+        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 text-xs border rounded-xl">No banners added yet. Upload up to 4 banners.</div>`;
+        return;
+      }
+      grid.innerHTML = bannersList.map((b, index) => `
+        <div class="bg-white p-3 rounded-xl shadow-sm border flex items-center space-x-3">
+          <div class="w-24 h-16 rounded-lg bg-gray-100 border overflow-hidden flex-shrink-0 flex items-center justify-center">
+            <img src="${b.image || b}" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-purple-950 text-xs">Banner #${index + 1}</h4>
+            <span class="text-[10px] text-gray-400 truncate block">Cloudflare R2 Linked</span>
+          </div>
+          <button onclick="deleteBanner(${index})" class="text-red-500 font-bold text-xs p-2">🗑️</button>
+        </div>
+      `).join('');
     }
 
     function renderCategoryDropdown() {
@@ -424,9 +568,11 @@
     function switchTab(tab) {
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
+      document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
       
       document.getElementById('tab-products').className = tab === 'products' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between';
       document.getElementById('tab-collections').className = tab === 'collections' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between';
+      document.getElementById('tab-banners').className = tab === 'banners' ? 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between' : 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between';
     }
 
     function openModal() { 
@@ -438,6 +584,11 @@
     function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
     function openAddCategoryModal() { document.getElementById('category-modal').classList.remove('hidden'); }
     function closeCategoryModal() { document.getElementById('category-modal').classList.add('hidden'); }
+    function openAddBannerModal() { 
+      document.getElementById('new-banner-image').value = '';
+      document.getElementById('banner-modal').classList.remove('hidden'); 
+    }
+    function closeBannerModal() { document.getElementById('banner-modal').classList.add('hidden'); }
   </script>
 </body>
 </html>
