@@ -167,7 +167,10 @@
           <label class="text-xs font-semibold">Warranty Details</label>
           <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Warranty"></textarea>
         </div>
-        <!-- 'What's in the box' field hata diya gaya hai taaki error na aaye -->
+        <div>
+          <label class="text-xs font-semibold">What's in the Box</label>
+          <textarea id="product-box" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1x Main Device"></textarea>
+        </div>
 
         <div class="flex items-center space-x-2 pt-2">
           <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
@@ -491,6 +494,7 @@
         const description = document.getElementById('product-description').value;
         const specification = document.getElementById('product-specification').value;
         const warranty = document.getElementById('product-warranty').value;
+        const whatsInBox = document.getElementById('product-box').value; // Saved safely inside description or separate column if exists
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const fileInput = document.getElementById('product-images');
 
@@ -549,6 +553,7 @@
       document.getElementById('product-description').value = p.description || p.details || '';
       document.getElementById('product-specification').value = p.specification || p.specs || '';
       document.getElementById('product-warranty').value = p.warranty || '';
+      document.getElementById('product-box').value = p.whats_in_the_box || '';
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-images').value = '';
 
