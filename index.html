@@ -59,7 +59,7 @@
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="border-b text-[11px] font-bold text-gray-400 uppercase">
-                <th class="pb-3 px-2">Image</th>
+                <th class="pb-3 px-2">Images</th>
                 <th class="pb-3 px-2">Title</th>
                 <th class="pb-3 px-2">Category</th>
                 <th class="pb-3 px-2">Price (Now / Was)</th>
@@ -117,15 +117,16 @@
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal -->
+  <!-- Add/Edit Product Modal (Supports Multiple Images) -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
         <div>
-          <label class="text-xs font-semibold block mb-1">Product Cover Image (Select File)</label>
-          <input type="file" id="product-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
+          <label class="text-xs font-semibold block mb-1">Product Images (Select 1 to 4 pictures)</label>
+          <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
+          <p class="text-[10px] text-gray-400 mt-1">Aap aik sath multiple pictures select kar sakte hain.</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -150,6 +151,10 @@
             <label class="text-xs font-semibold">Rating</label>
             <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-xs">
           </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold">Product Description / Details</label>
+          <textarea id="product-description" rows="3" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
         </div>
         <div class="flex items-center space-x-2 pt-2">
           <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
@@ -274,7 +279,6 @@
         const { data } = await dbClient.from('settings').select('value').eq('key', 'banners').maybeSingle();
         if (data && data.value) {
           const parsed = JSON.parse(data.value);
-          // Support both array of objects or objects containing interval
           if (Array.isArray(parsed)) {
             bannersList = parsed;
           } else if (parsed && typeof parsed === 'object') {
@@ -465,22 +469,33 @@
         return;
       }
 
-      container.innerHTML = filtered.map(p => `
-        <tr class="text-xs border-b">
-          <td class="py-2 px-2"><img src="${p.image_url || ''}" class="w-9 h-9 object-cover rounded border" onerror="this.src='https://via.placeholder.com/40?text=Img'"></td>
-          <td class="py-2 px-2 font-bold">${p.title}</td>
-          <td class="py-2 px-2"><span class="bg-purple-100 text-purple-900 px-2 py-0.5 rounded-full text-[10px]">${p.category}</span></td>
-          <td class="py-2 px-2">
-            <div class="font-bold text-purple-950">Now: PKR ${p.price}</div>
-            ${p.old_price ? `<div class="text-[10px] text-gray-400 line-through">Was: PKR ${p.old_price}</div>` : ''}
-          </td>
-          <td class="py-2 px-2">${p.is_best_seller ? '🌟 Yes' : 'No'}</td>
-          <td class="py-2 px-2 text-right space-x-2">
-            <button onclick="editProduct(${p.id})" class="text-blue-600 font-bold hover:underline">Edit</button>
-            <button onclick="deleteProduct(${p.id})" class="text-red-600 font-bold hover:underline">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      container.innerHTML = filtered.map(p => {
+        // Parse multiple images helper for admin view table
+        let imgs = [];
+        if (Array.isArray(p.images)) imgs = p.images;
+        else if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',');
+        else if (p.image_url) imgs = [p.image_url];
+
+        return `
+          <tr class="text-xs border-b">
+            <td class="py-2 px-2 flex space-x-1">
+              ${imgs.slice(0, 2).map(url => `<img src="${url.trim()}" class="w-9 h-9 object-cover rounded border" onerror="this.src='https://via.placeholder.com/40?text=Img'">`).join('')}
+              ${imgs.length > 2 ? `<span class="text-[10px] text-gray-500 font-bold self-center">+${imgs.length - 2}</span>` : ''}
+            </td>
+            <td class="py-2 px-2 font-bold">${p.title}</td>
+            <td class="py-2 px-2"><span class="bg-purple-100 text-purple-900 px-2 py-0.5 rounded-full text-[10px]">${p.category}</span></td>
+            <td class="py-2 px-2">
+              <div class="font-bold text-purple-950">Now: PKR ${p.price}</div>
+              ${p.old_price ? `<div class="text-[10px] text-gray-400 line-through">Was: PKR ${p.old_price}</div>` : ''}
+            </td>
+            <td class="py-2 px-2">${p.is_best_seller ? '🌟 Yes' : 'No'}</td>
+            <td class="py-2 px-2 text-right space-x-2">
+              <button onclick="editProduct(${p.id})" class="text-blue-600 font-bold hover:underline">Edit</button>
+              <button onclick="deleteProduct(${p.id})" class="text-red-600 font-bold hover:underline">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function saveProduct(event) {
@@ -493,17 +508,30 @@
         const id = document.getElementById('product-id').value;
         const title = document.getElementById('title').value.trim();
         const category = document.getElementById('category-select').value;
-        const price = parseFloat(document.getElementById('price.value') || document.getElementById('price').value);
+        const price = parseFloat(document.getElementById('price').value);
         const oldPrice = document.getElementById('old-price').value ? parseFloat(document.getElementById('old-price').value) : null;
         const rating = parseFloat(document.getElementById('rating').value) || 4.8;
+        const description = document.getElementById('product-description').value;
         const isBestSeller = document.getElementById('is-best-seller').checked;
-        const file = document.getElementById('product-image').files[0];
+        const fileInput = document.getElementById('product-images');
 
         let existingProduct = id ? allProducts.find(p => p.id == id) : null;
-        let imageUrl = existingProduct ? existingProduct.image_url : '';
+        let imageUrls = [];
 
-        if (file) {
-          imageUrl = await uploadToCloudflareR2(file, 'products_image');
+        // Retain old images if editing and no new files selected
+        if (existingProduct) {
+          if (Array.isArray(existingProduct.images)) imageUrls = existingProduct.images;
+          else if (typeof existingProduct.images === 'string' && existingProduct.images.includes(',')) imageUrls = existingProduct.images.split(',').map(s => s.trim());
+          else if (existingProduct.image_url) imageUrls = [existingProduct.image_url];
+        }
+
+        // Upload new files if selected
+        if (fileInput.files.length > 0) {
+          imageUrls = []; // Replace or add new selection
+          for (let i = 0; i < fileInput.files.length; i++) {
+            const uploadedUrl = await uploadToCloudflareR2(fileInput.files[i], 'products_image');
+            imageUrls.push(uploadedUrl);
+          }
         }
 
         const productData = { 
@@ -512,8 +540,10 @@
           price, 
           old_price: oldPrice,
           rating, 
+          description,
           is_best_seller: isBestSeller, 
-          image_url: imageUrl 
+          image_url: imageUrls[0] || '', // Primary fallback image
+          images: imageUrls // Array / List of multiple images
         };
 
         let error;
@@ -527,7 +557,7 @@
 
         if (error) throw error;
 
-        alert('Product Saved with Cloudflare R2 Image! ✅');
+        alert('Product Saved with Multiple Cloudflare R2 Images! ✅');
         closeModal();
         loadProducts();
       } catch (e) {
@@ -547,8 +577,9 @@
       document.getElementById('price').value = p.price || '';
       document.getElementById('old-price').value = p.old_price || '';
       document.getElementById('rating').value = p.rating || 4.8;
+      document.getElementById('product-description').value = p.description || p.details || '';
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
-      document.getElementById('product-image').value = '';
+      document.getElementById('product-images').value = '';
 
       document.getElementById('modal-title').innerText = 'Edit Product';
       document.getElementById('product-modal').classList.remove('hidden');
