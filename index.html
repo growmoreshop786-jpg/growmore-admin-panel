@@ -156,10 +156,25 @@
             <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-xs">
           </div>
         </div>
+        
+        <!-- Description & Tab Details Fields -->
         <div>
           <label class="text-xs font-semibold">Product Description / Details</label>
-          <textarea id="product-description" rows="3" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
+          <textarea id="product-description" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
         </div>
+        <div>
+          <label class="text-xs font-semibold">Specification</label>
+          <textarea id="product-specification" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• Bluetooth Version: 5.3&#10;• Playtime: 40 Hours"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold">Warranty Details</label>
+          <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Brand Warranty"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold">What's in the Box</label>
+          <textarea id="product-box" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1x Main Device&#10;• 1x Charging Cable"></textarea>
+        </div>
+
         <div class="flex items-center space-x-2 pt-2">
           <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
           <label class="text-xs font-bold text-purple-950">Show in Best Sellers 🌟</label>
@@ -518,6 +533,9 @@
         const oldPrice = document.getElementById('old-price').value ? parseFloat(document.getElementById('old-price').value) : null;
         const rating = parseFloat(document.getElementById('rating').value) || 4.8;
         const description = document.getElementById('product-description').value;
+        const specification = document.getElementById('product-specification').value;
+        const warranty = document.getElementById('product-warranty').value;
+        const boxItems = document.getElementById('product-box').value;
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const fileInput = document.getElementById('product-images');
 
@@ -539,6 +557,9 @@
           old_price: oldPrice,
           rating, 
           description,
+          specification,
+          warranty,
+          whats_in_the_box: boxItems,
           is_best_seller: isBestSeller, 
           image_url: finalImages[0] || '', // Primary thumbnail fallback
           images: finalImages.join(',') // Comma-separated string for text column format
@@ -576,6 +597,9 @@
       document.getElementById('old-price').value = p.old_price || '';
       document.getElementById('rating').value = p.rating || 4.8;
       document.getElementById('product-description').value = p.description || p.details || '';
+      document.getElementById('product-specification').value = p.specification || p.specs || '';
+      document.getElementById('product-warranty').value = p.warranty || '';
+      document.getElementById('product-box').value = p.whats_in_the_box || p.box_items || '';
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-images').value = '';
 
