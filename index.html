@@ -117,18 +117,20 @@
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal (Supports Multiple Images & Preview) -->
+  <!-- Add/Edit Product Modal -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
         <div>
-          <label class="text-xs font-semibold block mb-1">Product Images (Select new to add/replace)</label>
+          <label class="text-xs font-semibold block mb-1">Product Images (Upload new or remove existing)</label>
           <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
-          <!-- Existing Images Preview Container -->
+          
+          <!-- Interactive Existing Images Preview with Delete (X) buttons -->
           <div id="existing-images-preview" class="flex flex-wrap gap-2 mt-2"></div>
-          <p class="text-[10px] text-gray-400 mt-1">Aap mazeed naye pictures select kar sakte hain.</p>
+          
+          <p class="text-[10px] text-gray-400 mt-1">Aap kisi bhi purani pic par 'X' click karke remove kar sakte hain.</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -219,6 +221,8 @@
     let dbClient;
     let allProducts = [];
     let selectedAdminCategory = 'All';
+    let currentEditingImages = []; // Array to track images of currently edited product
+
     let collectionsList = [
       { name: 'Earbuds', image: '' },
       { name: 'Power Bank', image: '' },
@@ -473,7 +477,7 @@
 
       container.innerHTML = filtered.map(p => {
         let imgs = [];
-        if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',');
+        if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',').map(s => s.trim());
         else if (Array.isArray(p.images)) imgs = p.images;
         else if (p.images) imgs = [p.images];
         else if (p.image_url) imgs = [p.image_url];
@@ -481,7 +485,7 @@
         return `
           <tr class="text-xs border-b">
             <td class="py-2 px-2 flex space-x-1">
-              ${imgs.slice(0, 2).map(url => `<img src="${url.trim()}" class="w-9 h-9 object-cover rounded border" onerror="this.src='https://via.placeholder.com/40?text=Img'">`).join('')}
+              ${imgs.slice(0, 2).map(url => `<img src="${url}" class="w-9 h-9 object-cover rounded border" onerror="this.src='https://via.placeholder.com/40?text=Img'">`).join('')}
               ${imgs.length > 2 ? `<span class="text-[10px] text-gray-500 font-bold self-center">+${imgs.length - 2}</span>` : ''}
             </td>
             <td class="py-2 px-2 font-bold">${p.title}</td>
@@ -503,7 +507,7 @@
     async function saveProduct(event) {
       event.preventDefault();
       const btn = document.getElementById('save-product-btn');
-      btn.innerText = "Uploading to R2... ⏳";
+      btn.innerText = "Saving... ⏳";
       btn.disabled = true;
 
       try {
@@ -517,25 +521,14 @@
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const fileInput = document.getElementById('product-images');
 
-        let existingProduct = id ? allProducts.find(p => p.id == id) : null;
-        let imageUrls = [];
+        // Start with remaining existing images after user deletions
+        let finalImages = [...currentEditingImages];
 
-        // Retain old images if editing and no new files selected
-        if (existingProduct) {
-          if (typeof existingProduct.images === 'string' && existingProduct.images.includes(',')) {
-            imageUrls = existingProduct.images.split(',').map(s => s.trim());
-          } else if (existingProduct.images) {
-            imageUrls = [existingProduct.images];
-          } else if (existingProduct.image_url) {
-            imageUrls = [existingProduct.image_url];
-          }
-        }
-
-        // Upload new files if selected (combines with existing or replaces them)
+        // Upload new files selected and add them to the array
         if (fileInput.files.length > 0) {
           for (let i = 0; i < fileInput.files.length; i++) {
             const uploadedUrl = await uploadToCloudflareR2(fileInput.files[i], 'products_image');
-            imageUrls.push(uploadedUrl);
+            finalImages.push(uploadedUrl);
           }
         }
 
@@ -547,8 +540,8 @@
           rating, 
           description,
           is_best_seller: isBestSeller, 
-          image_url: imageUrls[0] || '', // Primary thumbnail fallback
-          images: imageUrls.join(',') // Comma-separated string for text column format
+          image_url: finalImages[0] || '', // Primary thumbnail fallback
+          images: finalImages.join(',') // Comma-separated string for text column format
         };
 
         let error;
@@ -562,7 +555,7 @@
 
         if (error) throw error;
 
-        alert('Product Saved with Multiple Cloudflare R2 Images! ✅');
+        alert('Product Saved Successfully! ✅');
         closeModal();
         loadProducts();
       } catch (e) {
@@ -586,26 +579,39 @@
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-images').value = '';
 
-      // Existing images preview extraction
-      let existingImgs = [];
+      // Populate currentEditingImages array
+      currentEditingImages = [];
       if (typeof p.images === 'string' && p.images.includes(',')) {
-        existingImgs = p.images.split(',').map(s => s.trim());
+        currentEditingImages = p.images.split(',').map(s => s.trim()).filter(s => s.length > 0);
       } else if (p.images) {
-        existingImgs = [p.images];
+        currentEditingImages = [p.images];
       } else if (p.image_url) {
-        existingImgs = [p.image_url];
+        currentEditingImages = [p.image_url];
       }
 
-      const previewContainer = document.getElementById('existing-images-preview');
-      if (existingImgs.length > 0 && existingImgs[0] !== '') {
-        previewContainer.innerHTML = `<span class="w-full text-[10px] text-purple-900 font-bold">Existing Images:</span>` + 
-          existingImgs.map(url => `<img src="${url}" class="w-12 h-12 object-cover rounded border border-purple-300">`).join('');
-      } else {
-        previewContainer.innerHTML = `<span class="text-[10px] text-gray-400">No images uploaded yet.</span>`;
-      }
+      renderExistingImagesPreview();
 
       document.getElementById('modal-title').innerText = 'Edit Product';
       document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function renderExistingImagesPreview() {
+      const previewContainer = document.getElementById('existing-images-preview');
+      if (currentEditingImages.length > 0) {
+        previewContainer.innerHTML = currentEditingImages.map((url, index) => `
+          <div class="relative w-14 h-14 rounded-lg border border-purple-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+            <img src="${url}" class="w-full h-full object-cover">
+            <button type="button" onclick="removeExistingImage(${index})" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 rounded-bl-lg font-bold text-[10px] flex items-center justify-center hover:bg-red-700">×</button>
+          </div>
+        `).join('');
+      } else {
+        previewContainer.innerHTML = `<span class="text-[10px] text-gray-400">No pictures currently attached. Upload new ones above.</span>`;
+      }
+    }
+
+    function removeExistingImage(index) {
+      currentEditingImages.splice(index, 1);
+      renderExistingImagesPreview();
     }
 
     async function deleteProduct(id) {
@@ -632,6 +638,7 @@
     function openModal() { 
       document.getElementById('product-form-element').reset();
       document.getElementById('product-id').value = '';
+      currentEditingImages = [];
       document.getElementById('existing-images-preview').innerHTML = '';
       document.getElementById('modal-title').innerText = 'Add Product';
       document.getElementById('product-modal').classList.remove('hidden'); 
