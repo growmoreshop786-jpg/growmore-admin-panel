@@ -470,10 +470,10 @@
       }
 
       container.innerHTML = filtered.map(p => {
-        // Parse multiple images helper for admin view table
         let imgs = [];
-        if (Array.isArray(p.images)) imgs = p.images;
-        else if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',');
+        if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',');
+        else if (Array.isArray(p.images)) imgs = p.images;
+        else if (p.images) imgs = [p.images];
         else if (p.image_url) imgs = [p.image_url];
 
         return `
@@ -520,14 +520,18 @@
 
         // Retain old images if editing and no new files selected
         if (existingProduct) {
-          if (Array.isArray(existingProduct.images)) imageUrls = existingProduct.images;
-          else if (typeof existingProduct.images === 'string' && existingProduct.images.includes(',')) imageUrls = existingProduct.images.split(',').map(s => s.trim());
-          else if (existingProduct.image_url) imageUrls = [existingProduct.image_url];
+          if (typeof existingProduct.images === 'string' && existingProduct.images.includes(',')) {
+            imageUrls = existingProduct.images.split(',').map(s => s.trim());
+          } else if (existingProduct.images) {
+            imageUrls = [existingProduct.images];
+          } else if (existingProduct.image_url) {
+            imageUrls = [existingProduct.image_url];
+          }
         }
 
         // Upload new files if selected
         if (fileInput.files.length > 0) {
-          imageUrls = []; // Replace or add new selection
+          imageUrls = [];
           for (let i = 0; i < fileInput.files.length; i++) {
             const uploadedUrl = await uploadToCloudflareR2(fileInput.files[i], 'products_image');
             imageUrls.push(uploadedUrl);
@@ -542,8 +546,8 @@
           rating, 
           description,
           is_best_seller: isBestSeller, 
-          image_url: imageUrls[0] || '', // Primary fallback image
-          images: imageUrls // Array / List of multiple images
+          image_url: imageUrls[0] || '', // Primary thumbnail fallback
+          images: imageUrls.join(',') // Comma-separated string for text column format
         };
 
         let error;
