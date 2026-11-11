@@ -117,16 +117,18 @@
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal (Supports Multiple Images) -->
+  <!-- Add/Edit Product Modal (Supports Multiple Images & Preview) -->
   <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
       <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
         <input type="hidden" id="product-id">
         <div>
-          <label class="text-xs font-semibold block mb-1">Product Images (Select 1 to 4 pictures)</label>
+          <label class="text-xs font-semibold block mb-1">Product Images (Select new to add/replace)</label>
           <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
-          <p class="text-[10px] text-gray-400 mt-1">Aap aik sath multiple pictures select kar sakte hain.</p>
+          <!-- Existing Images Preview Container -->
+          <div id="existing-images-preview" class="flex flex-wrap gap-2 mt-2"></div>
+          <p class="text-[10px] text-gray-400 mt-1">Aap mazeed naye pictures select kar sakte hain.</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -529,9 +531,8 @@
           }
         }
 
-        // Upload new files if selected
+        // Upload new files if selected (combines with existing or replaces them)
         if (fileInput.files.length > 0) {
-          imageUrls = [];
           for (let i = 0; i < fileInput.files.length; i++) {
             const uploadedUrl = await uploadToCloudflareR2(fileInput.files[i], 'products_image');
             imageUrls.push(uploadedUrl);
@@ -585,6 +586,24 @@
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-images').value = '';
 
+      // Existing images preview extraction
+      let existingImgs = [];
+      if (typeof p.images === 'string' && p.images.includes(',')) {
+        existingImgs = p.images.split(',').map(s => s.trim());
+      } else if (p.images) {
+        existingImgs = [p.images];
+      } else if (p.image_url) {
+        existingImgs = [p.image_url];
+      }
+
+      const previewContainer = document.getElementById('existing-images-preview');
+      if (existingImgs.length > 0 && existingImgs[0] !== '') {
+        previewContainer.innerHTML = `<span class="w-full text-[10px] text-purple-900 font-bold">Existing Images:</span>` + 
+          existingImgs.map(url => `<img src="${url}" class="w-12 h-12 object-cover rounded border border-purple-300">`).join('');
+      } else {
+        previewContainer.innerHTML = `<span class="text-[10px] text-gray-400">No images uploaded yet.</span>`;
+      }
+
       document.getElementById('modal-title').innerText = 'Edit Product';
       document.getElementById('product-modal').classList.remove('hidden');
     }
@@ -613,6 +632,7 @@
     function openModal() { 
       document.getElementById('product-form-element').reset();
       document.getElementById('product-id').value = '';
+      document.getElementById('existing-images-preview').innerHTML = '';
       document.getElementById('modal-title').innerText = 'Add Product';
       document.getElementById('product-modal').classList.remove('hidden'); 
     }
