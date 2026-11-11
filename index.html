@@ -100,7 +100,6 @@
           </button>
         </div>
 
-        <!-- Timer Configuration Card -->
         <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
           <div>
             <h4 class="font-bold text-purple-950 text-xs">Banner Auto-Slide Interval (Seconds)</h4>
@@ -127,9 +126,7 @@
           <label class="text-xs font-semibold block mb-1">Product Images (Upload new or remove existing)</label>
           <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
           
-          <!-- Interactive Existing Images Preview with Delete (X) buttons -->
           <div id="existing-images-preview" class="flex flex-wrap gap-2 mt-2"></div>
-          
           <p class="text-[10px] text-gray-400 mt-1">Aap kisi bhi purani pic par 'X' click karke remove kar sakte hain.</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -157,23 +154,20 @@
           </div>
         </div>
         
-        <!-- Description & Tab Details Fields -->
+        <!-- Description & Details Fields -->
         <div>
           <label class="text-xs font-semibold">Product Description / Details</label>
-          <textarea id="product-description" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
+          <textarea id="product-description" rows="3" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
         </div>
         <div>
           <label class="text-xs font-semibold">Specification</label>
-          <textarea id="product-specification" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• Bluetooth Version: 5.3&#10;• Playtime: 40 Hours"></textarea>
+          <textarea id="product-specification" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• Bluetooth Version: 5.3"></textarea>
         </div>
         <div>
           <label class="text-xs font-semibold">Warranty Details</label>
-          <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Brand Warranty"></textarea>
+          <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Warranty"></textarea>
         </div>
-        <div>
-          <label class="text-xs font-semibold">What's in the Box</label>
-          <textarea id="product-box" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1x Main Device&#10;• 1x Charging Cable"></textarea>
-        </div>
+        <!-- 'What's in the box' field hata diya gaya hai taaki error na aaye -->
 
         <div class="flex items-center space-x-2 pt-2">
           <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
@@ -225,18 +219,15 @@
     </div>
   </div>
 
-  <!-- Script for Cloudflare Worker & Supabase Integration -->
   <script>
     const SUPABASE_URL = 'https://expcwtfedhjmbhsnslkf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_B_0j8EGmc1a76LhW-GfjPw_3ff1KmK7';
-    
-    // Your Cloudflare Worker URL
     const WORKER_UPLOAD_URL = 'https://wandering-sea-3029.growmore-shop786.workers.dev';
 
     let dbClient;
     let allProducts = [];
     let selectedAdminCategory = 'All';
-    let currentEditingImages = []; // Array to track images of currently edited product
+    let currentEditingImages = [];
 
     let collectionsList = [
       { name: 'Earbuds', image: '' },
@@ -258,21 +249,15 @@
       await loadProducts();
     };
 
-    // Upload via Cloudflare Worker directly to R2
     async function uploadToCloudflareR2(file, folder) {
       try {
         const fileExt = file.name.split('.').pop();
         const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
         const response = await fetch(WORKER_UPLOAD_URL, {
           method: 'POST',
-          headers: {
-            'X-Folder': folder,
-            'X-Filename': filename,
-          },
+          headers: { 'X-Folder': folder, 'X-Filename': filename },
           body: file
         });
-
         const result = await response.json();
         if (!result.success) throw new Error(result.error || 'Upload failed');
         return result.url;
@@ -284,11 +269,8 @@
     async function loadCollectionsFromSupabase() {
       try {
         const { data } = await dbClient.from('settings').select('value').eq('key', 'collections').maybeSingle();
-        if (data && data.value) {
-          collectionsList = JSON.parse(data.value);
-        }
+        if (data && data.value) collectionsList = JSON.parse(data.value);
       } catch (e) {}
-
       document.getElementById('sidebar-collection-count').innerText = collectionsList.length;
       renderCategoryDropdown();
       renderCategoryFilters();
@@ -300,25 +282,20 @@
         const { data } = await dbClient.from('settings').select('value').eq('key', 'banners').maybeSingle();
         if (data && data.value) {
           const parsed = JSON.parse(data.value);
-          if (Array.isArray(parsed)) {
-            bannersList = parsed;
-          } else if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed)) bannersList = parsed;
+          else if (parsed && typeof parsed === 'object') {
             bannersList = parsed.images || [];
             bannerInterval = parsed.interval || 3;
           }
         }
       } catch (e) {}
-
       document.getElementById('sidebar-banner-count').innerText = bannersList.length;
       document.getElementById('banner-interval-input').value = bannerInterval;
       renderBannersAdminGrid();
     }
 
     async function saveBannersToSupabase() {
-      const payload = {
-        images: bannersList,
-        interval: parseInt(bannerInterval) || 3
-      };
+      const payload = { images: bannersList, interval: parseInt(bannerInterval) || 3 };
       await dbClient.from('settings').upsert({ key: 'banners', value: JSON.stringify(payload) });
       document.getElementById('sidebar-banner-count').innerText = bannersList.length;
       renderBannersAdminGrid();
@@ -332,29 +309,20 @@
 
     async function saveNewBanner(e) {
       e.preventDefault();
-      if (bannersList.length >= 4) {
-        alert('Aap maximum 4 banners hi add kar sakte hain!');
-        return;
-      }
+      if (bannersList.length >= 4) { alert('Aap maximum 4 banners hi add kar sakte hain!'); return; }
       const file = document.getElementById('new-banner-image').files[0];
       if (!file) return;
-
       const btn = document.getElementById('save-banner-btn');
       btn.innerText = "Uploading... ⏳";
       btn.disabled = true;
-
       try {
         const imgUrl = await uploadToCloudflareR2(file, 'banners');
         bannersList.push({ image: imgUrl });
         await saveBannersToSupabase();
         closeBannerModal();
         alert('Banner Uploaded Successfully! ✅');
-      } catch(err) {
-        alert(err.message);
-      } finally {
-        btn.innerText = "Upload Banner";
-        btn.disabled = false;
-      }
+      } catch(err) { alert(err.message); }
+      finally { btn.innerText = "Upload Banner"; btn.disabled = false; }
     }
 
     async function deleteBanner(index) {
@@ -392,13 +360,9 @@
     function renderCategoryFilters() {
       const container = document.getElementById('admin-category-filters');
       container.innerHTML = `
-        <button onclick="filterAdminCategory('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold ${selectedAdminCategory === 'All' ? 'bg-purple-900 text-white' : 'bg-gray-100 text-purple-900'}">
-          All
-        </button>
+        <button onclick="filterAdminCategory('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold ${selectedAdminCategory === 'All' ? 'bg-purple-900 text-white' : 'bg-gray-100 text-purple-900'}">All</button>
       ` + collectionsList.map(c => `
-        <button onclick="filterAdminCategory('${c.name}')" class="px-3 py-1.5 rounded-xl text-xs font-bold ${selectedAdminCategory === c.name ? 'bg-purple-900 text-white' : 'bg-gray-100 text-purple-900'}">
-          ${c.name}
-        </button>
+        <button onclick="filterAdminCategory('${c.name}')" class="px-3 py-1.5 rounded-xl text-xs font-bold ${selectedAdminCategory === c.name ? 'bg-purple-900 text-white' : 'bg-gray-100 text-purple-900'}">${c.name}</button>
       `).join('');
     }
 
@@ -435,9 +399,7 @@
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
         renderCollectionsAdminGrid();
         alert('Collection Picture Uploaded to R2 via Worker! ✅');
-      } catch (e) {
-        alert('Upload Error: ' + e.message);
-      }
+      } catch (e) { alert('Upload Error: ' + e.message); }
     }
 
     async function saveNewCategory(e) {
@@ -445,11 +407,9 @@
       const name = document.getElementById('new-category-name').value.trim();
       const file = document.getElementById('new-category-image').files[0];
       let imgUrl = '';
-
       if (file) {
         try { imgUrl = await uploadToCloudflareR2(file, 'collection_image'); } catch(err){ alert(err.message); return; }
       }
-
       if (name) {
         collectionsList.push({ name, image: imgUrl });
         await dbClient.from('settings').upsert({ key: 'collections', value: JSON.stringify(collectionsList) });
@@ -473,9 +433,7 @@
         allProducts = data || [];
         document.getElementById('sidebar-product-count').innerText = allProducts.length;
         displayProducts();
-      } catch(err) {
-        console.error("Load products error:", err);
-      }
+      } catch(err) { console.error("Load products error:", err); }
     }
 
     function displayProducts() {
@@ -484,12 +442,10 @@
       if (selectedAdminCategory !== 'All') {
         filtered = allProducts.filter(p => p.category?.toLowerCase() === selectedAdminCategory.toLowerCase());
       }
-
       if (!filtered.length) {
         container.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">No products found.</td></tr>`;
         return;
       }
-
       container.innerHTML = filtered.map(p => {
         let imgs = [];
         if (typeof p.images === 'string' && p.images.includes(',')) imgs = p.images.split(',').map(s => s.trim());
@@ -535,14 +491,10 @@
         const description = document.getElementById('product-description').value;
         const specification = document.getElementById('product-specification').value;
         const warranty = document.getElementById('product-warranty').value;
-        const boxItems = document.getElementById('product-box').value;
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const fileInput = document.getElementById('product-images');
 
-        // Start with remaining existing images after user deletions
         let finalImages = [...currentEditingImages];
-
-        // Upload new files selected and add them to the array
         if (fileInput.files.length > 0) {
           for (let i = 0; i < fileInput.files.length; i++) {
             const uploadedUrl = await uploadToCloudflareR2(fileInput.files[i], 'products_image');
@@ -559,10 +511,9 @@
           description,
           specification,
           warranty,
-          whats_in_the_box: boxItems,
           is_best_seller: isBestSeller, 
-          image_url: finalImages[0] || '', // Primary thumbnail fallback
-          images: finalImages.join(',') // Comma-separated string for text column format
+          image_url: finalImages[0] || '', 
+          images: finalImages.join(',') 
         };
 
         let error;
@@ -575,7 +526,6 @@
         }
 
         if (error) throw error;
-
         alert('Product Saved Successfully! ✅');
         closeModal();
         loadProducts();
@@ -599,11 +549,9 @@
       document.getElementById('product-description').value = p.description || p.details || '';
       document.getElementById('product-specification').value = p.specification || p.specs || '';
       document.getElementById('product-warranty').value = p.warranty || '';
-      document.getElementById('product-box').value = p.whats_in_the_box || p.box_items || '';
       document.getElementById('is-best-seller').checked = p.is_best_seller === true;
       document.getElementById('product-images').value = '';
 
-      // Populate currentEditingImages array
       currentEditingImages = [];
       if (typeof p.images === 'string' && p.images.includes(',')) {
         currentEditingImages = p.images.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -614,7 +562,6 @@
       }
 
       renderExistingImagesPreview();
-
       document.getElementById('modal-title').innerText = 'Edit Product';
       document.getElementById('product-modal').classList.remove('hidden');
     }
@@ -641,11 +588,8 @@
     async function deleteProduct(id) {
       if (confirm('Delete Product?')) {
         const { error } = await dbClient.from('products').delete().eq('id', id);
-        if (error) {
-          alert('Delete error: ' + error.message);
-        } else {
-          loadProducts();
-        }
+        if (error) alert('Delete error: ' + error.message);
+        else loadProducts();
       }
     }
 
