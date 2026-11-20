@@ -51,8 +51,25 @@
     <main class="flex-1 p-6 space-y-6">
       <!-- Products Section -->
       <section id="section-products" class="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
+          <div class="relative w-full sm:w-80">
+            <input
+              type="text"
+              id="product-search-input"
+              oninput="handleProductSearch(this.value)"
+              placeholder="Search product by name, category, or price..."
+              class="w-full pl-9 pr-8 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+            >
+            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+            <button
+              type="button"
+              id="clear-search-btn"
+              onclick="clearProductSearch()"
+              class="hidden absolute right-2.5 top-2 text-gray-400 hover:text-gray-700 text-xs font-bold"
+              title="Clear search"
+            >✕</button>
+          </div>
         </div>
         <div id="admin-category-filters" class="flex flex-wrap gap-2 pb-2 border-b"></div>
         <div class="overflow-x-auto">
@@ -230,6 +247,7 @@
     let dbClient;
     let allProducts = [];
     let selectedAdminCategory = 'All';
+    let searchQuery = '';
     let currentEditingImages = [];
 
     let collectionsList = [
@@ -375,6 +393,24 @@
       displayProducts();
     }
 
+    function handleProductSearch(val) {
+      searchQuery = (val || '').toLowerCase().trim();
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', searchQuery.length === 0);
+      }
+      displayProducts();
+    }
+
+    function clearProductSearch() {
+      const input = document.getElementById('product-search-input');
+      if (input) input.value = '';
+      searchQuery = '';
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      displayProducts();
+    }
+
     function renderCollectionsAdminGrid() {
       const grid = document.getElementById('collections-grid');
       grid.innerHTML = collectionsList.map((c, index) => `
@@ -443,10 +479,18 @@
       const container = document.getElementById('products-list');
       let filtered = allProducts;
       if (selectedAdminCategory !== 'All') {
-        filtered = allProducts.filter(p => p.category?.toLowerCase() === selectedAdminCategory.toLowerCase());
+        filtered = filtered.filter(p => p.category?.toLowerCase() === selectedAdminCategory.toLowerCase());
+      }
+      if (searchQuery) {
+        filtered = filtered.filter(p => {
+          const title = (p.title || '').toString().toLowerCase();
+          const category = (p.category || '').toString().toLowerCase();
+          const price = (p.price ?? '').toString().toLowerCase();
+          return title.includes(searchQuery) || category.includes(searchQuery) || price.includes(searchQuery);
+        });
       }
       if (!filtered.length) {
-        container.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">No products found.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">${searchQuery ? `No products found for "${searchQuery}".` : 'No products found.'}</td></tr>`;
         return;
       }
       container.innerHTML = filtered.map(p => {
@@ -494,7 +538,7 @@
         const description = document.getElementById('product-description').value;
         const specification = document.getElementById('product-specification').value;
         const warranty = document.getElementById('product-warranty').value;
-        const whatsInBox = document.getElementById('product-box').value; // Saved safely inside description or separate column if exists
+        const whatsInBox = document.getElementById('product-box').value;
         const isBestSeller = document.getElementById('is-best-seller').checked;
         const fileInput = document.getElementById('product-images');
 
