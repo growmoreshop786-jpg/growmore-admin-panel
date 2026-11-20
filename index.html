@@ -107,7 +107,7 @@
               type="text"
               id="order-search-input"
               oninput="renderOrdersList()"
-              placeholder="Search order #, name, email, phone..."
+              placeholder="Search order ID, name, email, phone..."
               class="pl-3 pr-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
             >
             <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
@@ -383,7 +383,18 @@
 
     // ================= ORDERS FUNCTIONS =================
     function getOrderDisplayId(order) {
-      return order.order_number || order.order_code || order.id;
+      const readableId =
+        order.order_number ||
+        order.order_code ||
+        order.order_id ||
+        order.display_id ||
+        order.tracking_id ||
+        order.reference_id;
+
+      if (readableId !== undefined && readableId !== null && String(readableId).trim() !== '') {
+        return String(readableId).trim().replace(/^#/, '');
+      }
+      return order.id;
     }
 
     function getOrderCustomerName(order) {
@@ -463,7 +474,8 @@
           getOrderCustomerName(o).toLowerCase().includes(q) ||
           (o.user_email || o.email || '').toLowerCase().includes(q) ||
           getOrderPhone(o).toLowerCase().includes(q) ||
-          String(getOrderDisplayId(o) || '').toLowerCase().includes(q)
+          String(getOrderDisplayId(o) || '').toLowerCase().includes(q) ||
+          String(o.id || '').toLowerCase().includes(q)
         );
       }
 
@@ -562,7 +574,7 @@
               <div class="flex items-center justify-between gap-2 bg-gray-50 p-2 rounded-xl border">
                 <label class="text-[11px] font-bold text-gray-600">Status:</label>
                 <select
-                  onchange="updateOrderStatus('${order.id}', this.value)"
+                  onchange="updateOrderStatus('${order.id}', '${displayId}', this.value)"
                   class="px-2.5 py-1 border border-purple-200 rounded-lg text-xs font-bold bg-white text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
@@ -576,12 +588,12 @@
       }).join('');
     }
 
-    async function updateOrderStatus(orderId, newStatus) {
+    async function updateOrderStatus(rowId, displayId, newStatus) {
       try {
         const { data, error } = await dbClient
           .from('orders')
           .update({ status: newStatus })
-          .eq('id', orderId)
+          .eq('id', rowId)
           .select();
 
         if (error) throw error;
@@ -590,10 +602,10 @@
           throw new Error('Row update nahi hui — Supabase orders table par UPDATE RLS policy check karein.');
         }
 
-        const target = allOrders.find(o => String(o.id) === String(orderId));
+        const target = allOrders.find(o => String(o.id) === String(rowId));
         if (target) target.status = newStatus;
         renderOrdersList();
-        alert(`Order status updated to "${newStatus}"! ✅`);
+        alert(`Order #${displayId} status updated to "${newStatus}"! ✅`);
       } catch (err) {
         alert('Error updating status: ' + err.message);
         await loadOrders();
