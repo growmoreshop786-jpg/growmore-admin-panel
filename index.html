@@ -16,14 +16,14 @@
       <h1 class="text-lg font-bold">GrowMore</h1>
       <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Worker Connected)</span>
     </div>
-    <div class="flex items-center space-x-3">
-      <button onclick="openModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+    <div id="header-tab-actions" class="flex items-center space-x-3">
+      <button id="header-add-product-btn" onclick="openModal()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
         + Add Product
       </button>
-      <button onclick="openAddCategoryModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+      <button id="header-add-collection-btn" onclick="openAddCategoryModal()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
         + Add Collection
       </button>
-      <button onclick="openAddBannerModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+      <button id="header-add-banner-btn" onclick="openAddBannerModal()" class="hidden bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
         + Add Banner
       </button>
     </div>
@@ -39,19 +39,19 @@
       </button>
 
       <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-2 mb-2">Store Catalog</div>
-      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
         <span>📦 Products Catalog</span>
         <span id="sidebar-product-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
-      <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+      <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
         <span>🛒 Orders</span>
         <span id="sidebar-order-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
-      <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+      <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
         <span>🏷️ Collections & Pictures</span>
         <span id="sidebar-collection-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
-      <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
+      <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
         <span>🖼️ Banners & Slider Settings</span>
         <span id="sidebar-banner-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
@@ -260,9 +260,6 @@
             <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
             <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 via Worker.</p>
           </div>
-          <button onclick="openAddCategoryModal()" class="bg-purple-900 text-white px-4 py-2 rounded-xl font-bold text-xs">
-            + New Collection
-          </button>
         </div>
         <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </section>
@@ -277,9 +274,6 @@
             </div>
             <p class="text-xs text-gray-400 mt-0.5">Upload 1 to 4 main slider banners and set auto-slide speed.</p>
           </div>
-          <button onclick="openAddBannerModal()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs">
-            + Add Banner
-          </button>
         </div>
 
         <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
@@ -501,12 +495,19 @@
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      updateHeaderActionsForTab('home');
       await loadCollectionsFromSupabase();
       await loadBannersFromSupabase();
       await loadDeliveryBannerFromSupabase();
       await loadProducts();
       await loadOrders();
     };
+
+    function updateHeaderActionsForTab(tab) {
+      document.getElementById('header-add-product-btn').classList.toggle('hidden', tab !== 'products');
+      document.getElementById('header-add-collection-btn').classList.toggle('hidden', tab !== 'collections');
+      document.getElementById('header-add-banner-btn').classList.toggle('hidden', tab !== 'banners');
+    }
 
     // ================= HOME / DELIVERED SALES DASHBOARD =================
     function setSalesPeriodFilter(period) {
@@ -1635,6 +1636,8 @@
       document.getElementById('tab-orders').className = tab === 'orders' ? activeClass : normalClass;
       document.getElementById('tab-collections').className = tab === 'collections' ? activeClass : normalClass;
       document.getElementById('tab-banners').className = tab === 'banners' ? activeClass : normalClass;
+
+      updateHeaderActionsForTab(tab);
 
       if (tab === 'home') renderHomeSalesDashboard();
       if (tab === 'orders') loadOrders();
