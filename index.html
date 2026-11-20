@@ -382,6 +382,19 @@
     };
 
     // ================= ORDERS FUNCTIONS =================
+    function parseJsonIfString(val) {
+      if (!val) return null;
+      if (typeof val === 'object') return val;
+      if (typeof val === 'string') {
+        try {
+          return JSON.parse(val);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
     function getOrderDisplayId(order) {
       const readableId =
         order.order_number ||
@@ -398,14 +411,64 @@
     }
 
     function getOrderCustomerName(order) {
-      return order.customer_name || order.full_name || order.name || order.customer || 'N/A';
+      const directName =
+        order.customer_name ||
+        order.full_name ||
+        order.name ||
+        order.user_name ||
+        order.username ||
+        order.client_name ||
+        order.recipient_name ||
+        order.buyer_name;
+
+      if (directName !== undefined && directName !== null && String(directName).trim() !== '') {
+        return String(directName).trim();
+      }
+
+      const nestedSources = [
+        parseJsonIfString(order.shipping_address),
+        parseJsonIfString(order.shipping_info),
+        parseJsonIfString(order.customer_details),
+        parseJsonIfString(order.customer),
+        parseJsonIfString(order.metadata)
+      ];
+
+      for (const obj of nestedSources) {
+        if (obj && typeof obj === 'object') {
+          const nestedName =
+            obj.customer_name ||
+            obj.full_name ||
+            obj.name ||
+            obj.recipient_name ||
+            obj.username;
+          if (nestedName !== undefined && nestedName !== null && String(nestedName).trim() !== '') {
+            return String(nestedName).trim();
+          }
+        }
+      }
+
+      return 'N/A';
     }
 
     function getOrderAddress(order) {
+      const parsedAddr = parseJsonIfString(order.shipping_address);
+      if (parsedAddr && typeof parsedAddr === 'object') {
+        return (
+          parsedAddr.address ||
+          parsedAddr.shipping_address ||
+          parsedAddr.full_address ||
+          parsedAddr.street ||
+          'N/A'
+        );
+      }
       return order.shipping_address || order.address || order.delivery_address || 'N/A';
     }
 
     function getOrderPhone(order) {
+      const parsedAddr = parseJsonIfString(order.shipping_address);
+      if (parsedAddr && typeof parsedAddr === 'object' && parsedAddr.phone) {
+        return String(parsedAddr.phone);
+      }
       return order.phone || order.customer_phone || order.phone_number || order.mobile || 'N/A';
     }
 
