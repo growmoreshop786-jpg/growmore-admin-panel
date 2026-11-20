@@ -109,8 +109,11 @@
       <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-5">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-xl font-bold text-purple-950">Manage Banners & Auto-Slide Speed</h2>
-            <p class="text-xs text-gray-400">Upload 1 to 4 banners, set slide timer, and manage delivery banner.</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-xl font-bold text-purple-950">1. Top Slider Banners (1 to 4)</h2>
+              <span class="bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 450 px (12:5)</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5">Upload 1 to 4 main slider banners and set auto-slide speed.</p>
           </div>
           <button onclick="openAddBannerModal()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs">
             + Add Banner
@@ -130,12 +133,15 @@
 
         <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1"></div>
 
-        <!-- Home Delivery Strip Banner Preview & Editor -->
+        <!-- 2. Home Delivery Strip Banner (Image Upload + Size Info) -->
         <div class="border-t pt-5 space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h3 class="text-base font-bold text-purple-950">Home Delivery Strip Banner</h3>
-              <p class="text-xs text-gray-400">App mein Best Sellers aur Explore More ke darmiyan show hone wala banner.</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-base font-bold text-purple-950">2. Home Delivery Strip Banner (Middle Banner)</h3>
+                <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 220 px (Wide Strip)</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-0.5">App mein Best Sellers aur Explore More ke darmiyan show hone wala banner.</p>
             </div>
             <label class="inline-flex items-center space-x-2 cursor-pointer text-xs font-bold text-purple-950">
               <input type="checkbox" id="delivery-banner-enabled" checked onchange="updateDeliveryPreview()" class="w-4 h-4 accent-purple-900">
@@ -147,38 +153,37 @@
             <!-- Live Visual Preview -->
             <div class="bg-gray-50 p-4 rounded-2xl border">
               <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">App Preview</p>
-              <div id="delivery-banner-preview" class="w-full rounded-2xl px-4 py-3 text-white flex items-center space-x-3 shadow" style="background: linear-gradient(90deg, #5b21b6 0%, #312e81 100%);">
-                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
-                  🚚
+              <div id="delivery-banner-preview" class="w-full rounded-2xl overflow-hidden shadow">
+                <div id="delivery-banner-image-preview" class="hidden w-full h-20">
+                  <img id="preview-delivery-img" src="" alt="Delivery Banner" class="w-full h-full object-cover">
                 </div>
-                <div class="min-w-0">
-                  <div id="preview-delivery-title" class="text-amber-300 font-bold text-xs tracking-wide truncate">ALL PAKISTAN FREE DELIVERY</div>
-                  <div id="preview-delivery-subtitle" class="text-white/80 text-[11px] truncate">Order now & get fast delivery at your doorstep.</div>
+                <div id="delivery-banner-text-preview" class="w-full px-4 py-3 text-white flex items-center space-x-3" style="background: linear-gradient(90deg, #5b21b6 0%, #312e81 100%);">
+                  <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                    🚚
+                  </div>
+                  <div class="min-w-0">
+                    <div id="preview-delivery-title" class="text-amber-300 font-bold text-xs tracking-wide truncate">ALL PAKISTAN FREE DELIVERY</div>
+                    <div id="preview-delivery-subtitle" class="text-white/80 text-[11px] truncate">Order now & get fast delivery at your doorstep.</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Edit Controls -->
+            <!-- Upload Picture & Save Controls -->
             <div class="space-y-3 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
               <div>
-                <label class="text-xs font-semibold block mb-1">Banner Heading</label>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-semibold">Upload Delivery Banner Picture (1080 × 220 px)</label>
+                  <button type="button" id="remove-delivery-img-btn" onclick="removeDeliveryBannerImage()" class="hidden text-[11px] text-red-600 font-bold hover:underline">Remove Pic ✕</button>
+                </div>
                 <input
-                  type="text"
-                  id="delivery-banner-title"
-                  value="ALL PAKISTAN FREE DELIVERY"
-                  oninput="updateDeliveryPreview()"
-                  class="w-full p-2 border rounded-lg text-xs font-bold bg-white"
-                >
-              </div>
-              <div>
-                <label class="text-xs font-semibold block mb-1">Banner Subtitle</label>
-                <input
-                  type="text"
-                  id="delivery-banner-subtitle"
-                  value="Order now & get fast delivery at your doorstep."
-                  oninput="updateDeliveryPreview()"
+                  type="file"
+                  id="delivery-banner-image-input"
+                  accept="image/*"
+                  onchange="previewDeliveryImageFile(event)"
                   class="w-full p-2 border rounded-lg text-xs bg-white"
                 >
+                <p class="text-[10px] text-gray-500 mt-1">Agar picture upload karenge toh app mein yeh picture show hogi; remove karne par default delivery banner dikhega.</p>
               </div>
               <div class="flex justify-end">
                 <button type="button" onclick="saveDeliveryBanner()" id="save-delivery-banner-btn" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-xs font-bold">
@@ -284,7 +289,8 @@
   <!-- Add Banner Modal -->
   <div id="banner-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-      <h3 class="text-lg font-bold text-purple-950 mb-3">Add Banner (1 to 4)</h3>
+      <h3 class="text-lg font-bold text-purple-950 mb-1">Add Top Slider Banner (1 to 4)</h3>
+      <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-semibold mb-3">Recommended Size: 1080 × 450 px (12:5)</p>
       <form onsubmit="saveNewBanner(event)" class="space-y-3">
         <div>
           <label class="text-xs font-semibold block mb-1">Select Banner Image</label>
@@ -322,10 +328,12 @@
     let bannersList = [];
     let bannerInterval = 3;
     let deliveryBanner = {
+      image: '',
       title: 'ALL PAKISTAN FREE DELIVERY',
       subtitle: 'Order now & get fast delivery at your doorstep.',
       enabled: true
     };
+    let deliveryBannerPreviewTempUrl = '';
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -387,6 +395,7 @@
           const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
           if (parsed && typeof parsed === 'object') {
             deliveryBanner = {
+              image: parsed.image || '',
               title: parsed.title ?? 'ALL PAKISTAN FREE DELIVERY',
               subtitle: parsed.subtitle ?? 'Order now & get fast delivery at your doorstep.',
               enabled: parsed.enabled !== false
@@ -394,19 +403,45 @@
           }
         }
       } catch (e) {}
-      document.getElementById('delivery-banner-title').value = deliveryBanner.title;
-      document.getElementById('delivery-banner-subtitle').value = deliveryBanner.subtitle;
       document.getElementById('delivery-banner-enabled').checked = deliveryBanner.enabled;
       updateDeliveryPreview();
     }
 
-    function updateDeliveryPreview() {
-      const title = document.getElementById('delivery-banner-title').value.trim() || 'ALL PAKISTAN FREE DELIVERY';
-      const subtitle = document.getElementById('delivery-banner-subtitle').value.trim() || 'Order now & get fast delivery at your doorstep.';
-      const enabled = document.getElementById('delivery-banner-enabled').checked;
+    function previewDeliveryImageFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      deliveryBannerPreviewTempUrl = URL.createObjectURL(file);
+      updateDeliveryPreview();
+    }
 
-      document.getElementById('preview-delivery-title').innerText = title;
-      document.getElementById('preview-delivery-subtitle').innerText = subtitle;
+    function removeDeliveryBannerImage() {
+      deliveryBanner.image = '';
+      deliveryBannerPreviewTempUrl = '';
+      const fileInput = document.getElementById('delivery-banner-image-input');
+      if (fileInput) fileInput.value = '';
+      updateDeliveryPreview();
+    }
+
+    function updateDeliveryPreview() {
+      const enabled = document.getElementById('delivery-banner-enabled').checked;
+      const activeImg = deliveryBannerPreviewTempUrl || deliveryBanner.image;
+
+      const imgWrap = document.getElementById('delivery-banner-image-preview');
+      const txtWrap = document.getElementById('delivery-banner-text-preview');
+      const imgEl = document.getElementById('preview-delivery-img');
+      const removeBtn = document.getElementById('remove-delivery-img-btn');
+
+      if (activeImg) {
+        imgEl.src = activeImg;
+        imgWrap.classList.remove('hidden');
+        txtWrap.classList.add('hidden');
+        removeBtn.classList.remove('hidden');
+      } else {
+        imgEl.src = '';
+        imgWrap.classList.add('hidden');
+        txtWrap.classList.remove('hidden');
+        removeBtn.classList.add('hidden');
+      }
 
       const previewEl = document.getElementById('delivery-banner-preview');
       previewEl.classList.toggle('opacity-40', !enabled);
@@ -417,18 +452,30 @@
       btn.innerText = 'Saving... ⏳';
       btn.disabled = true;
 
-      deliveryBanner = {
-        title: document.getElementById('delivery-banner-title').value.trim() || 'ALL PAKISTAN FREE DELIVERY',
-        subtitle: document.getElementById('delivery-banner-subtitle').value.trim() || 'Order now & get fast delivery at your doorstep.',
-        enabled: document.getElementById('delivery-banner-enabled').checked
-      };
-
       try {
+        const fileInput = document.getElementById('delivery-banner-image-input');
+        let finalImageUrl = deliveryBanner.image || '';
+
+        if (fileInput && fileInput.files.length > 0) {
+          finalImageUrl = await uploadToCloudflareR2(fileInput.files[0], 'banners');
+        }
+
+        deliveryBanner = {
+          image: finalImageUrl,
+          title: deliveryBanner.title || 'ALL PAKISTAN FREE DELIVERY',
+          subtitle: deliveryBanner.subtitle || 'Order now & get fast delivery at your doorstep.',
+          enabled: document.getElementById('delivery-banner-enabled').checked
+        };
+
         const { error } = await dbClient.from('settings').upsert({
           key: 'delivery_banner',
           value: JSON.stringify(deliveryBanner)
         });
         if (error) throw error;
+
+        deliveryBannerPreviewTempUrl = '';
+        if (fileInput) fileInput.value = '';
+        updateDeliveryPreview();
         alert('Delivery Banner Saved Successfully! ✅');
       } catch (e) {
         alert('Error saving delivery banner: ' + e.message);
@@ -479,7 +526,7 @@
     function renderBannersAdminGrid() {
       const grid = document.getElementById('banners-grid');
       if (!bannersList.length) {
-        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 text-xs border rounded-xl">No slider banners added yet. Upload up to 4 banners.</div>`;
+        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 text-xs border rounded-xl">No slider banners added yet. Upload up to 4 banners (1080 × 450 px).</div>`;
         return;
       }
       grid.innerHTML = bannersList.map((b, index) => `
@@ -489,7 +536,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <h4 class="font-bold text-purple-950 text-xs">Slider Banner #${index + 1}</h4>
-            <span class="text-[10px] text-gray-400 truncate block">Cloudflare R2 Linked</span>
+            <span class="text-[10px] text-gray-400 truncate block">Cloudflare R2 • 1080 × 450 px</span>
           </div>
           <button onclick="deleteBanner(${index})" class="text-red-500 font-bold text-xs p-2">🗑️</button>
         </div>
