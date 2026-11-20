@@ -107,7 +107,7 @@
               type="text"
               id="order-search-input"
               oninput="renderOrdersList()"
-              placeholder="Search name, email, phone..."
+              placeholder="Search order #, name, email, phone..."
               class="pl-3 pr-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
             >
             <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
@@ -124,8 +124,8 @@
           <button onclick="filterOrderStatus('Delivered')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Delivered</button>
         </div>
 
-        <div id="orders-container" class="space-y-4">
-          <div class="p-6 text-center text-gray-400 text-xs">Loading orders...</div>
+        <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="col-span-full p-6 text-center text-gray-400 text-xs">Loading orders...</div>
         </div>
       </section>
 
@@ -382,6 +382,37 @@
     };
 
     // ================= ORDERS FUNCTIONS =================
+    function getOrderDisplayId(order) {
+      return order.order_number || order.order_code || order.id;
+    }
+
+    function getOrderCustomerName(order) {
+      return order.customer_name || order.full_name || order.name || order.customer || 'N/A';
+    }
+
+    function getOrderAddress(order) {
+      return order.shipping_address || order.address || order.delivery_address || 'N/A';
+    }
+
+    function getOrderPhone(order) {
+      return order.phone || order.customer_phone || order.phone_number || order.mobile || 'N/A';
+    }
+
+    function getOrderPayment(order) {
+      return order.payment_method || order.payment || 'COD';
+    }
+
+    function getOrderDateFormatted(order) {
+      const raw = order.created_at || order.order_date || order.date;
+      if (!raw) return '';
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return String(raw);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
     async function loadOrders() {
       try {
         const { data, error } = await dbClient
@@ -395,7 +426,7 @@
       } catch (err) {
         console.error('Load orders error:', err);
         document.getElementById('orders-container').innerHTML =
-          `<div class="p-6 text-center text-red-500 text-xs">Orders load error: ${err.message}</div>`;
+          `<div class="col-span-full p-6 text-center text-red-500 text-xs">Orders load error: ${err.message}</div>`;
       }
     }
 
@@ -429,97 +460,115 @@
       }
       if (q) {
         filtered = filtered.filter(o =>
-          (o.customer_name || '').toLowerCase().includes(q) ||
-          (o.user_email || '').toLowerCase().includes(q) ||
-          (o.phone || '').toLowerCase().includes(q) ||
-          String(o.id || '').includes(q)
+          getOrderCustomerName(o).toLowerCase().includes(q) ||
+          (o.user_email || o.email || '').toLowerCase().includes(q) ||
+          getOrderPhone(o).toLowerCase().includes(q) ||
+          String(getOrderDisplayId(o) || '').toLowerCase().includes(q)
         );
       }
 
       if (!filtered.length) {
-        container.innerHTML = `<div class="p-6 text-center text-gray-400 text-xs border rounded-xl">No orders found.</div>`;
+        container.innerHTML = `<div class="col-span-full p-6 text-center text-gray-400 text-xs border rounded-xl">No orders found.</div>`;
         return;
       }
 
       container.innerHTML = filtered.map(order => {
         let items = [];
-        if (Array.isArray(order.items)) items = order.items;
-        else if (typeof order.items === 'string') {
-          try { items = JSON.parse(order.items); } catch (_) {}
+        const rawItems = order.items || order.order_items || order.products;
+        if (Array.isArray(rawItems)) items = rawItems;
+        else if (typeof rawItems === 'string') {
+          try { items = JSON.parse(rawItems); } catch (_) {}
         }
 
         const currentStatus = order.status || 'Processing';
-        const orderDate = order.created_at ? new Date(order.created_at).toLocaleString() : '';
+        const displayId = getOrderDisplayId(order);
+        const customerName = getOrderCustomerName(order);
+        const address = getOrderAddress(order);
+        const phone = getOrderPhone(order);
+        const payment = getOrderPayment(order);
+        const dateStr = getOrderDateFormatted(order);
+        const totalAmt = order.total_amount ?? order.total ?? 0;
 
         const itemsHtml = items.length
-          ? items.map(item => `
-              <div class="flex items-center justify-between text-xs bg-white px-3 py-2 rounded-lg border">
-                <div class="flex items-center space-x-2 min-w-0">
-                  ${item.image_url ? `<img src="${item.image_url}" class="w-9 h-9 rounded object-cover border flex-shrink-0">` : ''}
-                  <div class="truncate">
-                    <div class="font-bold text-purple-950 truncate">${item.title || 'Product'}</div>
-                    <div class="text-[11px] text-gray-500">Qty: ${item.quantity || 1} × PKR ${item.price || 0}</div>
+          ? items.map(item => {
+              const imgUrl = item.image_url || item.image || '';
+              const qty = item.quantity || item.qty || 1;
+              const unitPrice = Number(item.price || 0);
+              return `
+                <div class="flex items-center space-x-3 bg-purple-50/60 p-2.5 rounded-xl border border-purple-100/70">
+                  ${imgUrl ? `<img src="${imgUrl}" class="w-11 h-11 rounded-lg object-cover border bg-white flex-shrink-0">` : `<div class="w-11 h-11 rounded-lg bg-purple-100 flex items-center justify-center text-xs flex-shrink-0">📦</div>`}
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-purple-950 text-xs truncate">${item.title || item.name || 'Product'}</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">Qty: ${qty} &nbsp;|&nbsp; Rs.${unitPrice}</div>
                   </div>
                 </div>
-                <div class="font-bold text-purple-900 ml-2">PKR ${(Number(item.price || 0) * Number(item.quantity || 1))}</div>
-              </div>
-            `).join('')
+              `;
+            }).join('')
           : `<div class="text-xs text-gray-400">No product details attached</div>`;
 
         return `
-          <div class="border border-purple-100 rounded-2xl p-4 bg-purple-50/20 space-y-3 shadow-sm">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b pb-3">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-black text-purple-950 text-sm">Order #${order.id}</span>
-                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(currentStatus)}">${currentStatus}</span>
-                  <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">💳 ${order.payment_method || 'Cash on Delivery'}</span>
+          <div class="bg-white border border-purple-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="space-y-3">
+              <!-- Top Header: Order # & Status Badge -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-extrabold text-purple-950 text-sm truncate">Order #${displayId}</div>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(currentStatus)}">${currentStatus}</span>
+              </div>
+
+              <!-- Date & Payment Pill -->
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="text-gray-400 font-medium">${dateStr ? `Date: ${dateStr}` : ''}</span>
+                <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Payment: ${payment}</span>
+              </div>
+
+              <!-- Customer Name, Address, Phone Box -->
+              <div class="bg-purple-50/50 rounded-xl p-3 space-y-1.5 text-xs text-gray-700 border border-purple-100/60">
+                <div class="flex items-start gap-2">
+                  <span>👤</span>
+                  <span class="font-bold text-purple-950">${customerName}</span>
                 </div>
-                <div class="text-[11px] text-gray-400 mt-0.5">${orderDate}</div>
+                <div class="flex items-start gap-2">
+                  <span>📍</span>
+                  <span class="text-gray-600">${address}</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span>📞</span>
+                  <span class="text-gray-700 font-medium">${phone}</span>
+                </div>
+                ${(order.user_email || order.email) ? `
+                  <div class="flex items-start gap-2 pt-0.5 border-t border-purple-100/80">
+                    <span>✉️</span>
+                    <span class="text-[11px] text-gray-500 break-all">${order.user_email || order.email}</span>
+                  </div>
+                ` : ''}
               </div>
 
-              <div class="flex items-center gap-2">
-                <label class="text-xs font-bold text-gray-600">Change Status:</label>
+              <!-- Items -->
+              <div class="space-y-1.5">
+                <div class="text-xs font-bold text-gray-700">Items (${items.length}):</div>
+                <div class="space-y-1.5">
+                  ${itemsHtml}
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer: Total Amount & Status Dropdown -->
+            <div class="pt-2 border-t space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-600">Total Amount:</span>
+                <span class="font-black text-purple-950 text-sm">Rs.${totalAmt} PKR</span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 bg-gray-50 p-2 rounded-xl border">
+                <label class="text-[11px] font-bold text-gray-600">Status:</label>
                 <select
-                  onchange="updateOrderStatus(${order.id}, this.value)"
-                  class="px-3 py-1.5 border border-purple-300 rounded-xl text-xs font-bold bg-white text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onchange="updateOrderStatus('${order.id}', this.value)"
+                  class="px-2.5 py-1 border border-purple-200 rounded-lg text-xs font-bold bg-white text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>⏳ Processing</option>
-                  <option value="Dispatched" ${currentStatus === 'Dispatched' ? 'selected' : ''}>🚚 Dispatched</option>
-                  <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>✅ Delivered</option>
+                  <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
+                  <option value="Dispatched" ${currentStatus === 'Dispatched' ? 'selected' : ''}>Dispatched</option>
+                  <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
                 </select>
-              </div>
-            </div>
-
-            <!-- Customer & Shipping Details -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs bg-white p-3 rounded-xl border">
-              <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase">Customer Name</div>
-                <div class="font-bold text-purple-950 mt-0.5">${order.customer_name || 'N/A'}</div>
-              </div>
-              <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase">Account Email</div>
-                <div class="font-semibold text-gray-700 mt-0.5 break-all">${order.user_email || 'N/A'}</div>
-              </div>
-              <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase">Phone Number</div>
-                <div class="font-bold text-gray-800 mt-0.5">${order.phone || 'N/A'}</div>
-              </div>
-              <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase">Total Amount</div>
-                <div class="font-black text-emerald-700 text-sm mt-0.5">PKR ${order.total_amount || 0}</div>
-              </div>
-              <div class="md:col-span-2 lg:col-span-4 border-t pt-2">
-                <div class="text-[10px] font-bold text-gray-400 uppercase">Shipping Address</div>
-                <div class="font-semibold text-gray-800 mt-0.5">${order.shipping_address || 'N/A'}</div>
-              </div>
-            </div>
-
-            <!-- Product Details -->
-            <div class="space-y-1.5">
-              <div class="text-[10px] font-bold text-gray-400 uppercase">Ordered Products</div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                ${itemsHtml}
               </div>
             </div>
           </div>
@@ -529,18 +578,25 @@
 
     async function updateOrderStatus(orderId, newStatus) {
       try {
-        const { error } = await dbClient
+        const { data, error } = await dbClient
           .from('orders')
           .update({ status: newStatus })
-          .eq('id', orderId);
+          .eq('id', orderId)
+          .select();
+
         if (error) throw error;
 
-        const target = allOrders.find(o => o.id == orderId);
+        if (!data || data.length === 0) {
+          throw new Error('Row update nahi hui — Supabase orders table par UPDATE RLS policy check karein.');
+        }
+
+        const target = allOrders.find(o => String(o.id) === String(orderId));
         if (target) target.status = newStatus;
         renderOrdersList();
-        alert(`Order #${orderId} status updated to "${newStatus}"! ✅`);
+        alert(`Order status updated to "${newStatus}"! ✅`);
       } catch (err) {
         alert('Error updating status: ' + err.message);
+        await loadOrders();
       }
     }
 
