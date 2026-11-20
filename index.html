@@ -116,12 +116,36 @@
           </div>
         </div>
 
-        <!-- Status Filter Pills -->
-        <div class="flex flex-wrap gap-2 pb-2 border-b" id="order-status-filters">
-          <button onclick="filterOrderStatus('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900 text-white">All</button>
-          <button onclick="filterOrderStatus('Processing')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Processing</button>
-          <button onclick="filterOrderStatus('Dispatched')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Dispatched</button>
-          <button onclick="filterOrderStatus('Delivered')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Delivered</button>
+        <!-- Status Filter Pills + Select All / Delete Selected -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b">
+          <div class="flex flex-wrap gap-2" id="order-status-filters">
+            <button onclick="filterOrderStatus('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900 text-white">All</button>
+            <button onclick="filterOrderStatus('Processing')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Processing</button>
+            <button onclick="filterOrderStatus('Dispatched')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Dispatched</button>
+            <button onclick="filterOrderStatus('Delivered')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Delivered</button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="inline-flex items-center gap-1.5 bg-gray-50 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold text-purple-950 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="select-all-orders-checkbox"
+                onchange="toggleSelectAllOrders(this.checked)"
+                class="w-4 h-4 accent-purple-900 rounded cursor-pointer"
+              >
+              <span>Select All</span>
+            </label>
+            <button
+              type="button"
+              id="delete-selected-orders-btn"
+              onclick="deleteSelectedOrders()"
+              disabled
+              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+            >
+              <span>🗑️ Delete Selected</span>
+              <span id="selected-orders-count" class="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">0</span>
+            </button>
+          </div>
         </div>
 
         <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -348,6 +372,7 @@
     let allProducts = [];
     let allOrders = [];
     let allShippingAddresses = [];
+    let selectedOrderIds = new Set();
     let selectedOrderStatusFilter = 'All';
     let selectedAdminCategory = 'All';
     let searchQuery = '';
@@ -382,7 +407,7 @@
       await loadOrders();
     };
 
-    // ================= ORDERS + SHIPPING_ADDRESSES FUNCTIONS =================
+    // ================= ORDERS + SHIPPING_ADDRESSES + DELETE FUNCTIONS =================
     function getOrderDisplayId(order) {
       const readableId =
         order.order_number ||
@@ -427,20 +452,17 @@
       const emailStr = String(order.user_email || order.email || '').trim().toLowerCase();
       const phoneStr = String(order.phone || order.customer_phone || '').replace(/\D/g, '');
 
-      // 1. Match by order_id or order_number
       const byOrder = allShippingAddresses.find(s =>
         (s.order_id && (String(s.order_id).trim() === orderIdStr || String(s.order_id).trim() === displayIdStr)) ||
         (s.order_number && String(s.order_number).trim() === displayIdStr)
       );
       if (byOrder) return byOrder;
 
-      // 2. Match by user_id
       if (userIdStr) {
         const byUserId = allShippingAddresses.find(s => String(s.user_id || '').trim() === userIdStr);
         if (byUserId) return byUserId;
       }
 
-      // 3. Match by user_email / email
       if (emailStr) {
         const byEmail = allShippingAddresses.find(s =>
           String(s.user_email || s.email || s.user || '').trim().toLowerCase() === emailStr
@@ -448,7 +470,6 @@
         if (byEmail) return byEmail;
       }
 
-      // 4. Match by phone digits
       if (phoneStr.length >= 7) {
         const byPhone = allShippingAddresses.find(s => {
           const sPhone = String(s.phone || s.phone_number || s.mobile || '').replace(/\D/g, '');
@@ -549,12 +570,139 @@
           if (shipAddrRes.error) console.warn('shipping_addresses fetch warning:', shipAddrRes.error.message);
         }
 
+        // Keep only valid existing order IDs in selection set
+        const validIds = new Set(allOrders.map(o => String(o.id)));
+        selectedOrderIds = new Set([...selectedOrderIds].filter(id => validIds.has(id)));
+
         document.getElementById('sidebar-order-count').innerText = allOrders.length;
         renderOrdersList();
       } catch (err) {
         console.error('Load orders error:', err);
         document.getElementById('orders-container').innerHTML =
           `<div class="col-span-full p-6 text-center text-red-500 text-xs">Orders load error: ${err.message}</div>`;
+      }
+    }
+
+    function getFilteredOrders() {
+      const q = (document.getElementById('order-search-input')?.value || '').toLowerCase().trim();
+      let filtered = allOrders;
+
+      if (selectedOrderStatusFilter !== 'All') {
+        filtered = filtered.filter(o => (o.status || 'Processing').toLowerCase() === selectedOrderStatusFilter.toLowerCase());
+      }
+      if (q) {
+        filtered = filtered.filter(o =>
+          getOrderCustomerName(o).toLowerCase().includes(q) ||
+          (o.user_email || o.email || '').toLowerCase().includes(q) ||
+          getOrderPhone(o).toLowerCase().includes(q) ||
+          String(getOrderDisplayId(o) || '').toLowerCase().includes(q) ||
+          String(o.id || '').toLowerCase().includes(q)
+        );
+      }
+      return filtered;
+    }
+
+    function syncOrderSelectionUI(filteredOrders) {
+      const selectAllCb = document.getElementById('select-all-orders-checkbox');
+      const deleteBtn = document.getElementById('delete-selected-orders-btn');
+      const countBadge = document.getElementById('selected-orders-count');
+
+      const visibleIds = (filteredOrders || []).map(o => String(o.id));
+      const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedOrderIds.has(id));
+
+      if (selectAllCb) {
+        selectAllCb.checked = allVisibleSelected;
+        selectAllCb.indeterminate = !allVisibleSelected && visibleIds.some(id => selectedOrderIds.has(id));
+      }
+      if (countBadge) {
+        countBadge.innerText = selectedOrderIds.size;
+      }
+      if (deleteBtn) {
+        deleteBtn.disabled = selectedOrderIds.size === 0;
+      }
+    }
+
+    function toggleOrderSelection(orderId, checked) {
+      const idStr = String(orderId);
+      if (checked) selectedOrderIds.add(idStr);
+      else selectedOrderIds.delete(idStr);
+      syncOrderSelectionUI(getFilteredOrders());
+    }
+
+    function toggleSelectAllOrders(checked) {
+      const visible = getFilteredOrders();
+      visible.forEach(o => {
+        const idStr = String(o.id);
+        if (checked) selectedOrderIds.add(idStr);
+        else selectedOrderIds.delete(idStr);
+      });
+      renderOrdersList();
+    }
+
+    async function deleteSingleOrder(orderId, displayId) {
+      if (!confirm(`Kya aap Order #${displayId} ko permanently delete karna chahte hain?`)) return;
+
+      try {
+        const { data, error } = await dbClient
+          .from('orders')
+          .delete()
+          .eq('id', orderId)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Order delete nahi hua — Supabase orders table par DELETE RLS policy check karein.');
+        }
+
+        selectedOrderIds.delete(String(orderId));
+        allOrders = allOrders.filter(o => String(o.id) !== String(orderId));
+        document.getElementById('sidebar-order-count').innerText = allOrders.length;
+        renderOrdersList();
+        alert(`Order #${displayId} deleted successfully! 🗑️`);
+      } catch (err) {
+        alert('Error deleting order: ' + err.message);
+        await loadOrders();
+      }
+    }
+
+    async function deleteSelectedOrders() {
+      const idsToDelete = [...selectedOrderIds];
+      if (!idsToDelete.length) return;
+
+      if (!confirm(`Kya aap selected ${idsToDelete.length} orders ko permanently delete karna chahte hain?`)) return;
+
+      const deleteBtn = document.getElementById('delete-selected-orders-btn');
+      if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = `<span>Deleting... ⏳</span>`;
+      }
+
+      try {
+        const { data, error } = await dbClient
+          .from('orders')
+          .delete()
+          .in('id', idsToDelete)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Selected orders delete nahi hue — Supabase orders table par DELETE RLS policy check karein.');
+        }
+
+        const deletedSet = new Set(data.map(row => String(row.id)));
+        allOrders = allOrders.filter(o => !deletedSet.has(String(o.id)));
+        deletedSet.forEach(id => selectedOrderIds.delete(id));
+        document.getElementById('sidebar-order-count').innerText = allOrders.length;
+        renderOrdersList();
+        alert(`${deletedSet.size} order(s) deleted successfully! 🗑️`);
+      } catch (err) {
+        alert('Error deleting selected orders: ' + err.message);
+        await loadOrders();
+      } finally {
+        if (deleteBtn) {
+          deleteBtn.innerHTML = `<span>🗑️ Delete Selected</span><span id="selected-orders-count" class="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">${selectedOrderIds.size}</span>`;
+          deleteBtn.disabled = selectedOrderIds.size === 0;
+        }
       }
     }
 
@@ -580,21 +728,8 @@
 
     function renderOrdersList() {
       const container = document.getElementById('orders-container');
-      const q = (document.getElementById('order-search-input')?.value || '').toLowerCase().trim();
-
-      let filtered = allOrders;
-      if (selectedOrderStatusFilter !== 'All') {
-        filtered = filtered.filter(o => (o.status || 'Processing').toLowerCase() === selectedOrderStatusFilter.toLowerCase());
-      }
-      if (q) {
-        filtered = filtered.filter(o =>
-          getOrderCustomerName(o).toLowerCase().includes(q) ||
-          (o.user_email || o.email || '').toLowerCase().includes(q) ||
-          getOrderPhone(o).toLowerCase().includes(q) ||
-          String(getOrderDisplayId(o) || '').toLowerCase().includes(q) ||
-          String(o.id || '').toLowerCase().includes(q)
-        );
-      }
+      const filtered = getFilteredOrders();
+      syncOrderSelectionUI(filtered);
 
       if (!filtered.length) {
         container.innerHTML = `<div class="col-span-full p-6 text-center text-gray-400 text-xs border rounded-xl">No orders found.</div>`;
@@ -617,6 +752,7 @@
         const payment = getOrderPayment(order);
         const dateStr = getOrderDateFormatted(order);
         const totalAmt = order.total_amount ?? order.total ?? 0;
+        const isChecked = selectedOrderIds.has(String(order.id));
 
         const itemsHtml = items.length
           ? items.map(item => {
@@ -636,12 +772,29 @@
           : `<div class="text-xs text-gray-400">No product details attached</div>`;
 
         return `
-          <div class="bg-white border border-purple-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+          <div class="bg-white border ${isChecked ? 'border-purple-500 ring-2 ring-purple-200' : 'border-purple-100'} rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3 transition">
             <div class="space-y-3">
-              <!-- Top Header: Order # & Status Badge -->
+              <!-- Top Header: Checkbox + Order # + Status Badge + Single Delete -->
               <div class="flex items-center justify-between gap-2">
-                <div class="font-extrabold text-purple-950 text-sm truncate">Order #${displayId}</div>
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(currentStatus)}">${currentStatus}</span>
+                <div class="flex items-center gap-2 min-w-0">
+                  <input
+                    type="checkbox"
+                    ${isChecked ? 'checked' : ''}
+                    onchange="toggleOrderSelection('${order.id}', this.checked)"
+                    class="w-4 h-4 accent-purple-900 rounded cursor-pointer flex-shrink-0"
+                    title="Select order"
+                  >
+                  <div class="font-extrabold text-purple-950 text-sm truncate">Order #${displayId}</div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(currentStatus)}">${currentStatus}</span>
+                  <button
+                    type="button"
+                    onclick="deleteSingleOrder('${order.id}', '${displayId}')"
+                    class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-lg text-xs font-bold transition"
+                    title="Delete this order"
+                  >🗑️</button>
+                </div>
               </div>
 
               <!-- Date & Payment Pill -->
