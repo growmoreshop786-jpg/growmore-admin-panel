@@ -347,6 +347,7 @@
     let dbClient;
     let allProducts = [];
     let allOrders = [];
+    let allShippingRecords = [];
     let selectedOrderStatusFilter = 'All';
     let selectedAdminCategory = 'All';
     let searchQuery = '';
@@ -381,20 +382,7 @@
       await loadOrders();
     };
 
-    // ================= ORDERS FUNCTIONS =================
-    function parseJsonIfString(val) {
-      if (!val) return null;
-      if (typeof val === 'object') return val;
-      if (typeof val === 'string') {
-        try {
-          return JSON.parse(val);
-        } catch (_) {
-          return null;
-        }
-      }
-      return null;
-    }
-
+    // ================= ORDERS + SHIPPING TABLE FUNCTIONS =================
     function getOrderDisplayId(order) {
       const readableId =
         order.order_number ||
@@ -410,7 +398,64 @@
       return order.id;
     }
 
+    function findShippingForOrder(order) {
+      if (!allShippingRecords || !allShippingRecords.length) return null;
+
+      const orderIdStr = String(order.id || '').trim();
+      const displayIdStr = String(getOrderDisplayId(order) || '').trim();
+      const emailStr = String(order.user_email || order.email || '').trim().toLowerCase();
+
+      // 1. Match by order_id if present in shipping table
+      const byOrderId = allShippingRecords.find(s =>
+        (s.order_id && (String(s.order_id).trim() === orderIdStr || String(s.order_id).trim() === displayIdStr)) ||
+        (s.order_number && String(s.order_number).trim() === displayIdStr)
+      );
+      if (byOrderId) return byOrderId;
+
+      // 2. Match by user_email / email
+      if (emailStr) {
+        const byEmail = allShippingRecords.find(s =>
+          String(s.user_email || s.email || '').trim().toLowerCase() === emailStr
+        );
+        if (byEmail) return byEmail;
+      }
+
+      return null;
+    }
+
+    function formatShippingAddressRow(ship) {
+      if (!ship) return '';
+      if (ship.shipping_address && String(ship.shipping_address).trim()) return String(ship.shipping_address).trim();
+      if (ship.full_address && String(ship.full_address).trim()) return String(ship.full_address).trim();
+
+      const parts = [
+        ship.address || ship.street_address || ship.street || ship.house,
+        ship.area || ship.colony || ship.sector,
+        ship.city,
+        ship.state || ship.province || ship.emirate,
+        ship.country
+      ]
+        .map(v => (v !== undefined && v !== null ? String(v).trim() : ''))
+        .filter(Boolean);
+
+      return parts.join(', ');
+    }
+
     function getOrderCustomerName(order) {
+      const ship = findShippingForOrder(order);
+      if (ship) {
+        const shipName =
+          ship.full_name ||
+          ship.customer_name ||
+          ship.name ||
+          ship.recipient_name ||
+          ship.user_name ||
+          ship.username;
+        if (shipName && String(shipName).trim() !== '') {
+          return String(shipName).trim();
+        }
+      }
+
       const directName =
         order.customer_name ||
         order.full_name ||
@@ -418,57 +463,31 @@
         order.user_name ||
         order.username ||
         order.client_name ||
-        order.recipient_name ||
-        order.buyer_name;
+        order.recipient_name;
 
-      if (directName !== undefined && directName !== null && String(directName).trim() !== '') {
+      if (directName && String(directName).trim() !== '') {
         return String(directName).trim();
       }
-
-      const nestedSources = [
-        parseJsonIfString(order.shipping_address),
-        parseJsonIfString(order.shipping_info),
-        parseJsonIfString(order.customer_details),
-        parseJsonIfString(order.customer),
-        parseJsonIfString(order.metadata)
-      ];
-
-      for (const obj of nestedSources) {
-        if (obj && typeof obj === 'object') {
-          const nestedName =
-            obj.customer_name ||
-            obj.full_name ||
-            obj.name ||
-            obj.recipient_name ||
-            obj.username;
-          if (nestedName !== undefined && nestedName !== null && String(nestedName).trim() !== '') {
-            return String(nestedName).trim();
-          }
-        }
-      }
-
       return 'N/A';
     }
 
     function getOrderAddress(order) {
-      const parsedAddr = parseJsonIfString(order.shipping_address);
-      if (parsedAddr && typeof parsedAddr === 'object') {
-        return (
-          parsedAddr.address ||
-          parsedAddr.shipping_address ||
-          parsedAddr.full_address ||
-          parsedAddr.street ||
-          'N/A'
-        );
-      }
+      const ship = findShippingForOrder(order);
+      const formattedShipAddr = formatShippingAddressRow(ship);
+      if (formattedShipAddr) return formattedShipAddr;
+
       return order.shipping_address || order.address || order.delivery_address || 'N/A';
     }
 
     function getOrderPhone(order) {
-      const parsedAddr = parseJsonIfString(order.shipping_address);
-      if (parsedAddr && typeof parsedAddr === 'object' && parsedAddr.phone) {
-        return String(parsedAddr.phone);
+      const ship = findShippingForOrder(order);
+      if (ship) {
+        const shipPhone = ship.phone || ship.phone_number || ship.mobile || ship.contact;
+        if (shipPhone && String(shipPhone).trim() !== '') {
+          return String(shipPhone).trim();
+        }
       }
+
       return order.phone || order.customer_phone || order.phone_number || order.mobile || 'N/A';
     }
 
@@ -489,12 +508,21 @@
 
     async function loadOrders() {
       try {
-        const { data, error } = await dbClient
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        allOrders = data || [];
+        const [ordersRes, shippingRes] = await Promise.all([
+          dbClient.from('orders').select('*').order('created_at', { ascending: false }),
+          dbClient.from('shipping').select('*').order('id', { ascending: false })
+        ]);
+
+        if (ordersRes.error) throw ordersRes.error;
+        allOrders = ordersRes.data || [];
+
+        if (!shippingRes.error && shippingRes.data) {
+          allShippingRecords = shippingRes.data;
+        } else {
+          allShippingRecords = [];
+          if (shippingRes.error) console.warn('Shipping table fetch warning:', shippingRes.error.message);
+        }
+
         document.getElementById('sidebar-order-count').innerText = allOrders.length;
         renderOrdersList();
       } catch (err) {
@@ -596,7 +624,7 @@
                 <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Payment: ${payment}</span>
               </div>
 
-              <!-- Customer Name, Address, Phone Box -->
+              <!-- Shipping Table Customer Name, Address, Phone Box -->
               <div class="bg-purple-50/50 rounded-xl p-3 space-y-1.5 text-xs text-gray-700 border border-purple-100/60">
                 <div class="flex items-start gap-2">
                   <span>👤</span>
