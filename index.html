@@ -32,10 +32,16 @@
   <div class="flex min-h-[calc(100vh-60px)]">
     <!-- Sidebar -->
     <aside class="w-64 bg-white shadow-sm p-4 space-y-3">
-      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Catalog</div>
-      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between">
+      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Overview</div>
+      <button onclick="switchTab('home')" id="tab-home" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center">
+        <span>🏠 Home & Delivered Sales</span>
+        <span id="sidebar-delivered-count" class="bg-emerald-100 text-emerald-800 px-2 rounded-full text-[10px]">0</span>
+      </button>
+
+      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-2 mb-2">Store Catalog</div>
+      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
         <span>📦 Products Catalog</span>
-        <span id="sidebar-product-count" class="bg-purple-200 px-2 rounded-full text-[10px]">0</span>
+        <span id="sidebar-product-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
       </button>
       <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between">
         <span>🛒 Orders</span>
@@ -53,8 +59,102 @@
 
     <!-- Main Section -->
     <main class="flex-1 p-6 space-y-6">
+
+      <!-- HOME / DELIVERED SALES SECTION -->
+      <section id="section-home" class="space-y-5">
+        <div class="bg-white rounded-2xl shadow-sm border p-6 space-y-5">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-xl font-bold text-purple-950">Home — Delivered Products Sales</h2>
+                <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Delivered Only ✓</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-0.5">Sirf un orders ka product-wise sale record jo <b>Delivered</b> ho chuke hain.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex bg-gray-100 p-1 rounded-xl" id="sales-period-filters">
+                <button onclick="setSalesPeriodFilter('all')" data-period="all" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-900 text-white">All Time</button>
+                <button onclick="setSalesPeriodFilter('today')" data-period="today" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">Today</button>
+                <button onclick="setSalesPeriodFilter('month')" data-period="month" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">This Month</button>
+              </div>
+              <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Summary KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-br from-purple-950 to-purple-800 text-white rounded-2xl p-4 shadow-sm">
+              <div class="text-[11px] uppercase tracking-wider text-purple-200 font-bold">Delivered Revenue</div>
+              <div id="kpi-delivered-revenue" class="text-2xl font-black mt-1">Rs. 0</div>
+              <div class="text-[11px] text-purple-200 mt-1">Completed & delivered sales</div>
+            </div>
+
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+              <div class="text-[11px] uppercase tracking-wider text-emerald-700 font-bold">Delivered Orders</div>
+              <div id="kpi-delivered-orders" class="text-2xl font-black text-emerald-900 mt-1">0</div>
+              <div class="text-[11px] text-emerald-700 mt-1">Successfully delivered to customers</div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <div class="text-[11px] uppercase tracking-wider text-amber-700 font-bold">Total Products Sold</div>
+              <div id="kpi-units-sold" class="text-2xl font-black text-amber-900 mt-1">0</div>
+              <div class="text-[11px] text-amber-700 mt-1">Total units in delivered orders</div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <div class="text-[11px] uppercase tracking-wider text-blue-700 font-bold">In-Progress Orders</div>
+              <div id="kpi-pending-orders" class="text-2xl font-black text-blue-900 mt-1">0</div>
+              <div class="text-[11px] text-blue-700 mt-1">Processing + Dispatched (not in sale yet)</div>
+            </div>
+          </div>
+
+          <!-- Search + Product Sales Table -->
+          <div class="space-y-3 pt-2">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <h3 class="text-sm font-bold text-purple-950">Product-Wise Sale Table (Delivered Orders)</h3>
+              <input
+                type="text"
+                id="sales-search-input"
+                oninput="renderHomeSalesDashboard()"
+                placeholder="Search sold product by name..."
+                class="w-full sm:w-72 px-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+              >
+            </div>
+
+            <div class="overflow-x-auto border border-purple-100 rounded-2xl">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-purple-50/80 border-b border-purple-100 text-[11px] font-bold text-purple-950 uppercase">
+                    <th class="py-3 px-3">#</th>
+                    <th class="py-3 px-3">Product</th>
+                    <th class="py-3 px-3">Category</th>
+                    <th class="py-3 px-3">Unit Price</th>
+                    <th class="py-3 px-3">Delivered Orders</th>
+                    <th class="py-3 px-3">Qty Sold</th>
+                    <th class="py-3 px-3 text-right">Total Sale (PKR)</th>
+                  </tr>
+                </thead>
+                <tbody id="delivered-sales-table-body" class="divide-y divide-gray-100 text-xs">
+                  <tr><td colspan="7" class="p-6 text-center text-gray-400">Loading sales data...</td></tr>
+                </tbody>
+                <tfoot id="delivered-sales-table-foot" class="hidden bg-purple-950 text-white text-xs font-bold">
+                  <tr>
+                    <td colspan="5" class="py-3 px-3 text-right uppercase tracking-wider text-[11px] text-purple-200">Grand Total (Delivered):</td>
+                    <td id="foot-total-qty" class="py-3 px-3">0</td>
+                    <td id="foot-total-revenue" class="py-3 px-3 text-right text-amber-300">Rs. 0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Products Section -->
-      <section id="section-products" class="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+      <section id="section-products" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
           <div class="relative w-full sm:w-80">
@@ -100,7 +200,7 @@
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
             <h2 class="text-xl font-bold text-purple-950">Customer Orders</h2>
-            <p class="text-xs text-gray-400">Status change karne par sirf us customer ke app account mein live update hoga.</p>
+            <p class="text-xs text-gray-400">Status <b>Delivered</b> karne par product automatically Home & Sales table mein add ho jayega.</p>
           </div>
           <div class="flex items-center gap-2">
             <input
@@ -374,6 +474,7 @@
     let allShippingAddresses = [];
     let selectedOrderIds = new Set();
     let selectedOrderStatusFilter = 'All';
+    let selectedSalesPeriod = 'all';
     let selectedAdminCategory = 'All';
     let searchQuery = '';
     let currentEditingImages = [];
@@ -406,6 +507,175 @@
       await loadProducts();
       await loadOrders();
     };
+
+    // ================= HOME / DELIVERED SALES DASHBOARD =================
+    function setSalesPeriodFilter(period) {
+      selectedSalesPeriod = period;
+      const btns = document.querySelectorAll('#sales-period-filters button');
+      btns.forEach(btn => {
+        if (btn.dataset.period === period) {
+          btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-purple-900 text-white';
+        } else {
+          btn.className = 'px-3 py-1 rounded-lg text-xs font-bold text-purple-900';
+        }
+      });
+      renderHomeSalesDashboard();
+    }
+
+    function parseOrderItemsArray(order) {
+      const rawItems = order.items || order.order_items || order.products;
+      if (Array.isArray(rawItems)) return rawItems;
+      if (typeof rawItems === 'string') {
+        try {
+          const parsed = JSON.parse(rawItems);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {}
+      }
+      return [];
+    }
+
+    function isOrderInSelectedPeriod(order) {
+      if (selectedSalesPeriod === 'all') return true;
+      const rawDate = order.updated_at || order.created_at || order.order_date || order.date;
+      if (!rawDate) return false;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return false;
+      const now = new Date();
+      if (selectedSalesPeriod === 'today') {
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      }
+      if (selectedSalesPeriod === 'month') {
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+      return true;
+    }
+
+    function renderHomeSalesDashboard() {
+      const deliveredAll = allOrders.filter(o => (o.status || '').toLowerCase() === 'delivered');
+      const inProgressCount = allOrders.filter(o => (o.status || 'Processing').toLowerCase() !== 'delivered').length;
+
+      const deliveredBadge = document.getElementById('sidebar-delivered-count');
+      if (deliveredBadge) deliveredBadge.innerText = deliveredAll.length;
+
+      const deliveredOrders = deliveredAll.filter(isOrderInSelectedPeriod);
+
+      let totalRevenue = 0;
+      let totalUnitsSold = 0;
+      const productSalesMap = new Map();
+
+      deliveredOrders.forEach(order => {
+        const items = parseOrderItemsArray(order);
+        const orderTotal = Number(order.total_amount ?? order.total ?? 0);
+
+        if (!items.length) {
+          totalRevenue += orderTotal;
+          return;
+        }
+
+        items.forEach(item => {
+          const title = String(item.title || item.name || 'Unnamed Product').trim();
+          const key = (item.product_id || item.id || title).toString().toLowerCase();
+          const qty = Number(item.quantity || item.qty || 1);
+          const unitPrice = Number(item.price || 0);
+          const lineTotal = unitPrice * qty;
+
+          totalUnitsSold += qty;
+          totalRevenue += lineTotal;
+
+          const matchedCatalog = allProducts.find(
+            p => String(p.id) === String(item.product_id || item.id) ||
+                 (p.title || '').trim().toLowerCase() === title.toLowerCase()
+          );
+
+          if (!productSalesMap.has(key)) {
+            productSalesMap.set(key, {
+              title,
+              category: item.category || matchedCatalog?.category || 'General',
+              image: item.image_url || item.image || matchedCatalog?.image_url || '',
+              unitPrice,
+              orderIds: new Set([String(order.id)]),
+              qtySold: qty,
+              totalSale: lineTotal
+            });
+          } else {
+            const entry = productSalesMap.get(key);
+            entry.orderIds.add(String(order.id));
+            entry.qtySold += qty;
+            entry.totalSale += lineTotal;
+            if (unitPrice > 0) entry.unitPrice = unitPrice;
+          }
+        });
+      });
+
+      document.getElementById('kpi-delivered-revenue').innerText = `Rs. ${totalRevenue.toLocaleString()}`;
+      document.getElementById('kpi-delivered-orders').innerText = deliveredOrders.length;
+      document.getElementById('kpi-units-sold').innerText = totalUnitsSold;
+      document.getElementById('kpi-pending-orders').innerText = inProgressCount;
+
+      const searchTerm = (document.getElementById('sales-search-input')?.value || '').toLowerCase().trim();
+      let rows = [...productSalesMap.values()].sort((a, b) => b.totalSale - a.totalSale);
+
+      if (searchTerm) {
+        rows = rows.filter(r =>
+          r.title.toLowerCase().includes(searchTerm) ||
+          r.category.toLowerCase().includes(searchTerm)
+        );
+      }
+
+      const tbody = document.getElementById('delivered-sales-table-body');
+      const tfoot = document.getElementById('delivered-sales-table-foot');
+
+      if (!rows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-gray-400 text-xs">
+              Abhi tak koi <b>Delivered</b> product sale nahi mila. Jab aap Orders mein kisi order ko <b>Delivered</b> mark karenge toh uska sale yahan show hoga.
+            </td>
+          </tr>
+        `;
+        tfoot.classList.add('hidden');
+        return;
+      }
+
+      let tableQtySum = 0;
+      let tableSaleSum = 0;
+
+      tbody.innerHTML = rows.map((row, idx) => {
+        tableQtySum += row.qtySold;
+        tableSaleSum += row.totalSale;
+
+        return `
+          <tr class="hover:bg-purple-50/40 transition">
+            <td class="py-3 px-3 font-bold text-gray-400">${idx + 1}</td>
+            <td class="py-3 px-3">
+              <div class="flex items-center space-x-2.5">
+                ${row.image
+                  ? `<img src="${row.image}" class="w-9 h-9 rounded-lg object-cover border bg-white flex-shrink-0">`
+                  : `<div class="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center text-xs flex-shrink-0">📦</div>`}
+                <span class="font-bold text-purple-950">${row.title}</span>
+              </div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[10px] font-bold">${row.category}</span>
+            </td>
+            <td class="py-3 px-3 text-gray-600 font-medium">Rs. ${row.unitPrice.toLocaleString()}</td>
+            <td class="py-3 px-3 font-semibold text-gray-700">${row.orderIds.size}</td>
+            <td class="py-3 px-3">
+              <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-extrabold">${row.qtySold} pcs</span>
+            </td>
+            <td class="py-3 px-3 text-right font-black text-purple-950">Rs. ${row.totalSale.toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('foot-total-qty').innerText = `${tableQtySum} pcs`;
+      document.getElementById('foot-total-revenue').innerText = `Rs. ${tableSaleSum.toLocaleString()}`;
+      tfoot.classList.remove('hidden');
+    }
 
     // ================= ORDERS + SHIPPING_ADDRESSES + DELETE FUNCTIONS =================
     function getOrderDisplayId(order) {
@@ -570,11 +840,11 @@
           if (shipAddrRes.error) console.warn('shipping_addresses fetch warning:', shipAddrRes.error.message);
         }
 
-        // Keep only valid existing order IDs in selection set
         const validIds = new Set(allOrders.map(o => String(o.id)));
         selectedOrderIds = new Set([...selectedOrderIds].filter(id => validIds.has(id)));
 
         document.getElementById('sidebar-order-count').innerText = allOrders.length;
+        renderHomeSalesDashboard();
         renderOrdersList();
       } catch (err) {
         console.error('Load orders error:', err);
@@ -657,6 +927,7 @@
         selectedOrderIds.delete(String(orderId));
         allOrders = allOrders.filter(o => String(o.id) !== String(orderId));
         document.getElementById('sidebar-order-count').innerText = allOrders.length;
+        renderHomeSalesDashboard();
         renderOrdersList();
         alert(`Order #${displayId} deleted successfully! 🗑️`);
       } catch (err) {
@@ -693,6 +964,7 @@
         allOrders = allOrders.filter(o => !deletedSet.has(String(o.id)));
         deletedSet.forEach(id => selectedOrderIds.delete(id));
         document.getElementById('sidebar-order-count').innerText = allOrders.length;
+        renderHomeSalesDashboard();
         renderOrdersList();
         alert(`${deletedSet.size} order(s) deleted successfully! 🗑️`);
       } catch (err) {
@@ -737,13 +1009,7 @@
       }
 
       container.innerHTML = filtered.map(order => {
-        let items = [];
-        const rawItems = order.items || order.order_items || order.products;
-        if (Array.isArray(rawItems)) items = rawItems;
-        else if (typeof rawItems === 'string') {
-          try { items = JSON.parse(rawItems); } catch (_) {}
-        }
-
+        const items = parseOrderItemsArray(order);
         const currentStatus = order.status || 'Processing';
         const displayId = getOrderDisplayId(order);
         const customerName = getOrderCustomerName(order);
@@ -874,6 +1140,7 @@
 
         const target = allOrders.find(o => String(o.id) === String(rowId));
         if (target) target.status = newStatus;
+        renderHomeSalesDashboard();
         renderOrdersList();
         alert(`Order #${displayId} status updated to "${newStatus}"! ✅`);
       } catch (err) {
@@ -1182,6 +1449,7 @@
         allProducts = data || [];
         document.getElementById('sidebar-product-count').innerText = allProducts.length;
         displayProducts();
+        renderHomeSalesDashboard();
       } catch(err) { console.error("Load products error:", err); }
     }
 
@@ -1353,19 +1621,22 @@
     }
 
     function switchTab(tab) {
+      document.getElementById('section-home').classList.toggle('hidden', tab !== 'home');
       document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
       document.getElementById('section-orders').classList.toggle('hidden', tab !== 'orders');
       document.getElementById('section-collections').classList.toggle('hidden', tab !== 'collections');
       document.getElementById('section-banners').classList.toggle('hidden', tab !== 'banners');
 
-      const activeClass = 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between';
-      const normalClass = 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between';
+      const activeClass = 'w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center';
+      const normalClass = 'w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center';
 
+      document.getElementById('tab-home').className = tab === 'home' ? activeClass : normalClass;
       document.getElementById('tab-products').className = tab === 'products' ? activeClass : normalClass;
       document.getElementById('tab-orders').className = tab === 'orders' ? activeClass : normalClass;
       document.getElementById('tab-collections').className = tab === 'collections' ? activeClass : normalClass;
       document.getElementById('tab-banners').className = tab === 'banners' ? activeClass : normalClass;
 
+      if (tab === 'home') renderHomeSalesDashboard();
       if (tab === 'orders') loadOrders();
     }
 
