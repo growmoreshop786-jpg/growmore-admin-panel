@@ -9,452 +9,515 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
-  <!-- Top Header -->
-  <header class="bg-purple-950 text-white px-6 py-3 shadow-md flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <div class="bg-purple-800 p-2 rounded-lg font-black text-sm">GM</div>
-      <h1 class="text-lg font-bold">GrowMore</h1>
-      <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Worker Connected)</span>
+  <!-- PASSWORD LOCK SCREEN -->
+  <div id="admin-lock-screen" class="fixed inset-0 z-50 bg-gradient-to-br from-purple-950 via-purple-900 to-indigo-950 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5 border border-purple-100">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-purple-950 text-white font-black text-xl flex items-center justify-center shadow-md">
+          GM
+        </div>
+        <h2 class="text-xl font-extrabold text-purple-950">Admin Panel Locked</h2>
+        <p class="text-xs text-gray-500">GrowMore Control Panel open karne ke liye password enter karein.</p>
+      </div>
+
+      <form onsubmit="unlockAdminPanel(event)" class="space-y-4">
+        <div>
+          <label for="admin-password-input" class="block text-xs font-bold text-purple-950 mb-1">Admin Password</label>
+          <div class="relative">
+            <input
+              type="password"
+              id="admin-password-input"
+              required
+              autocomplete="current-password"
+              placeholder="Enter password..."
+              class="w-full px-3.5 py-2.5 pr-10 border border-purple-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-600 bg-purple-50/40"
+            >
+            <button
+              type="button"
+              onclick="togglePasswordVisibility()"
+              class="absolute right-3 top-2.5 text-xs text-gray-500 hover:text-purple-950 font-bold"
+              title="Show / Hide Password"
+            >👁️</button>
+          </div>
+          <p id="admin-lock-error" class="hidden text-[11px] text-red-600 font-bold mt-1.5">❌ Galat password! Dobara try karein.</p>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+          <input type="checkbox" id="remember-admin-session" class="w-4 h-4 accent-purple-900 rounded">
+          <span>Keep unlocked in this browser session</span>
+        </label>
+
+        <button
+          type="submit"
+          class="w-full bg-purple-950 hover:bg-purple-800 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition"
+        >
+          🔓 Unlock Control Panel
+        </button>
+      </form>
     </div>
-    <div id="header-tab-actions" class="flex items-center space-x-3">
-      <button id="header-add-product-btn" onclick="openModal()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
-        + Add Product
-      </button>
-      <button id="header-add-collection-btn" onclick="openAddCategoryModal()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
-        + Add Collection
-      </button>
-      <button id="header-add-banner-btn" onclick="openAddBannerModal()" class="hidden bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
-        + Add Banner
-      </button>
-    </div>
-  </header>
+  </div>
 
-  <div class="flex min-h-[calc(100vh-60px)]">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-sm p-4 space-y-3">
-      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Overview</div>
-      <button onclick="switchTab('home')" id="tab-home" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center">
-        <span>🏠 Home & Delivered Sales</span>
-        <span id="sidebar-delivered-count" class="bg-emerald-100 text-emerald-800 px-2 rounded-full text-[10px]">0</span>
-      </button>
+  <!-- MAIN ADMIN APP (HIDDEN UNTIL UNLOCKED) -->
+  <div id="admin-main-app" class="hidden">
 
-      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-2 mb-2">Store Catalog</div>
-      <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
-        <span>📦 Products Catalog</span>
-        <span id="sidebar-product-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
-      </button>
-      <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
-        <span>🛒 Orders</span>
-        <span id="sidebar-order-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
-      </button>
-      <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
-        <span>🏷️ Collections & Pictures</span>
-        <span id="sidebar-collection-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
-      </button>
-      <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
-        <span>🖼️ Banners & Slider Settings</span>
-        <span id="sidebar-banner-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
-      </button>
-    </aside>
+    <!-- Top Header -->
+    <header class="bg-purple-950 text-white px-6 py-3 shadow-md flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-purple-800 p-2 rounded-lg font-black text-sm">GM</div>
+        <h1 class="text-lg font-bold">GrowMore</h1>
+        <span class="text-xs text-purple-300 border-l border-purple-800 pl-3">Control Panel (R2 Worker Connected)</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div id="header-tab-actions" class="flex items-center space-x-3">
+          <button id="header-add-product-btn" onclick="openModal()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+            + Add Product
+          </button>
+          <button id="header-add-collection-btn" onclick="openAddCategoryModal()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+            + Add Collection
+          </button>
+          <button id="header-add-banner-btn" onclick="openAddBannerModal()" class="hidden bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+            + Add Banner
+          </button>
+        </div>
+        <button
+          type="button"
+          onclick="lockAdminPanel()"
+          class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg font-bold text-xs transition border border-white/15"
+          title="Lock Panel"
+        >
+          🔒 Lock
+        </button>
+      </div>
+    </header>
 
-    <!-- Main Section -->
-    <main class="flex-1 p-6 space-y-6">
+    <div class="flex min-h-[calc(100vh-60px)]">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-white shadow-sm p-4 space-y-3">
+        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Overview</div>
+        <button onclick="switchTab('home')" id="tab-home" class="w-full text-left px-3 py-2.5 rounded-xl font-bold text-xs bg-purple-50 text-purple-900 flex justify-between items-center">
+          <span>🏠 Home & Delivered Sales</span>
+          <span id="sidebar-delivered-count" class="bg-emerald-100 text-emerald-800 px-2 rounded-full text-[10px]">0</span>
+        </button>
 
-      <!-- HOME / DELIVERED SALES SECTION -->
-      <section id="section-home" class="space-y-5">
-        <div class="bg-white rounded-2xl shadow-sm border p-6 space-y-5">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-xl font-bold text-purple-950">Home — Delivered Products Sales</h2>
-                <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Delivered Only ✓</span>
+        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-2 mb-2">Store Catalog</div>
+        <button onclick="switchTab('products')" id="tab-products" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
+          <span>📦 Products Catalog</span>
+          <span id="sidebar-product-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+        </button>
+        <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
+          <span>🛒 Orders</span>
+          <span id="sidebar-order-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+        </button>
+        <button onclick="switchTab('collections')" id="tab-collections" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
+          <span>🏷️ Collections & Pictures</span>
+          <span id="sidebar-collection-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+        </button>
+        <button onclick="switchTab('banners')" id="tab-banners" class="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-xs text-gray-600 hover:bg-gray-50 flex justify-between items-center">
+          <span>🖼️ Banners & Slider Settings</span>
+          <span id="sidebar-banner-count" class="bg-gray-100 px-2 rounded-full text-[10px]">0</span>
+        </button>
+      </aside>
+
+      <!-- Main Section -->
+      <main class="flex-1 p-6 space-y-6">
+
+        <!-- HOME / DELIVERED SALES SECTION -->
+        <section id="section-home" class="space-y-5">
+          <div class="bg-white rounded-2xl shadow-sm border p-6 space-y-5">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xl font-bold text-purple-950">Home — Delivered Products Sales</h2>
+                  <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Delivered Only ✓</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">Sirf un orders ka product-wise sale record jo <b>Delivered</b> ho chuke hain.</p>
               </div>
-              <p class="text-xs text-gray-400 mt-0.5">Sirf un orders ka product-wise sale record jo <b>Delivered</b> ho chuke hain.</p>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex bg-gray-100 p-1 rounded-xl" id="sales-period-filters">
+                  <button onclick="setSalesPeriodFilter('all')" data-period="all" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-900 text-white">All Time</button>
+                  <button onclick="setSalesPeriodFilter('today')" data-period="today" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">Today</button>
+                  <button onclick="setSalesPeriodFilter('month')" data-period="month" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">This Month</button>
+                </div>
+                <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
+                  🔄 Refresh
+                </button>
+              </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-              <div class="flex bg-gray-100 p-1 rounded-xl" id="sales-period-filters">
-                <button onclick="setSalesPeriodFilter('all')" data-period="all" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-900 text-white">All Time</button>
-                <button onclick="setSalesPeriodFilter('today')" data-period="today" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">Today</button>
-                <button onclick="setSalesPeriodFilter('month')" data-period="month" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-900">This Month</button>
+            <!-- 4 Summary KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div class="bg-gradient-to-br from-purple-950 to-purple-800 text-white rounded-2xl p-4 shadow-sm">
+                <div class="text-[11px] uppercase tracking-wider text-purple-200 font-bold">Delivered Revenue</div>
+                <div id="kpi-delivered-revenue" class="text-2xl font-black mt-1">Rs. 0</div>
+                <div class="text-[11px] text-purple-200 mt-1">Completed & delivered sales</div>
               </div>
+
+              <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                <div class="text-[11px] uppercase tracking-wider text-emerald-700 font-bold">Delivered Orders</div>
+                <div id="kpi-delivered-orders" class="text-2xl font-black text-emerald-900 mt-1">0</div>
+                <div class="text-[11px] text-emerald-700 mt-1">Successfully delivered to customers</div>
+              </div>
+
+              <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div class="text-[11px] uppercase tracking-wider text-amber-700 font-bold">Total Products Sold</div>
+                <div id="kpi-units-sold" class="text-2xl font-black text-amber-900 mt-1">0</div>
+                <div class="text-[11px] text-amber-700 mt-1">Total units in delivered orders</div>
+              </div>
+
+              <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <div class="text-[11px] uppercase tracking-wider text-blue-700 font-bold">In-Progress Orders</div>
+                <div id="kpi-pending-orders" class="text-2xl font-black text-blue-900 mt-1">0</div>
+                <div class="text-[11px] text-blue-700 mt-1">Processing + Dispatched (not in sale yet)</div>
+              </div>
+            </div>
+
+            <!-- Search + Product Sales Table -->
+            <div class="space-y-3 pt-2">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <h3 class="text-sm font-bold text-purple-950">Product-Wise Sale Table (Delivered Orders)</h3>
+                <input
+                  type="text"
+                  id="sales-search-input"
+                  oninput="renderHomeSalesDashboard()"
+                  placeholder="Search sold product by name..."
+                  class="w-full sm:w-72 px-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+                >
+              </div>
+
+              <div class="overflow-x-auto border border-purple-100 rounded-2xl">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-purple-50/80 border-b border-purple-100 text-[11px] font-bold text-purple-950 uppercase">
+                      <th class="py-3 px-3">#</th>
+                      <th class="py-3 px-3">Product</th>
+                      <th class="py-3 px-3">Category</th>
+                      <th class="py-3 px-3">Unit Price</th>
+                      <th class="py-3 px-3">Delivered Orders</th>
+                      <th class="py-3 px-3">Qty Sold</th>
+                      <th class="py-3 px-3 text-right">Total Sale (PKR)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="delivered-sales-table-body" class="divide-y divide-gray-100 text-xs">
+                    <tr><td colspan="7" class="p-6 text-center text-gray-400">Loading sales data...</td></tr>
+                  </tbody>
+                  <tfoot id="delivered-sales-table-foot" class="hidden bg-purple-950 text-white text-xs font-bold">
+                    <tr>
+                      <td colspan="5" class="py-3 px-3 text-right uppercase tracking-wider text-[11px] text-purple-200">Grand Total (Delivered):</td>
+                      <td id="foot-total-qty" class="py-3 px-3">0</td>
+                      <td id="foot-total-revenue" class="py-3 px-3 text-right text-amber-300">Rs. 0</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="section-products" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
+            <div class="relative w-full sm:w-80">
+              <input
+                type="text"
+                id="product-search-input"
+                oninput="handleProductSearch(this.value)"
+                placeholder="Search product by name, category, or price..."
+                class="w-full pl-9 pr-8 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+              >
+              <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
+              <button
+                type="button"
+                id="clear-search-btn"
+                onclick="clearProductSearch()"
+                class="hidden absolute right-2.5 top-2 text-gray-400 hover:text-gray-700 text-xs font-bold"
+                title="Clear search"
+              >✕</button>
+            </div>
+          </div>
+          <div id="admin-category-filters" class="flex flex-wrap gap-2 pb-2 border-b"></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b text-[11px] font-bold text-gray-400 uppercase">
+                  <th class="pb-3 px-2">Images</th>
+                  <th class="pb-3 px-2">Title</th>
+                  <th class="pb-3 px-2">Category</th>
+                  <th class="pb-3 px-2">Price (Now / Was)</th>
+                  <th class="pb-3 px-2">Best Seller</th>
+                  <th class="pb-3 px-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="products-list" class="divide-y divide-gray-50">
+                <tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Loading products...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Orders Section -->
+        <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div>
+              <h2 class="text-xl font-bold text-purple-950">Customer Orders</h2>
+              <p class="text-xs text-gray-400">Status <b>Delivered</b> karne par product automatically Home & Sales table mein add ho jayega.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                type="text"
+                id="order-search-input"
+                oninput="renderOrdersList()"
+                placeholder="Search order ID, name, email, phone..."
+                class="pl-3 pr-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+              >
               <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
                 🔄 Refresh
               </button>
             </div>
           </div>
 
-          <!-- 4 Summary KPI Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-purple-950 to-purple-800 text-white rounded-2xl p-4 shadow-sm">
-              <div class="text-[11px] uppercase tracking-wider text-purple-200 font-bold">Delivered Revenue</div>
-              <div id="kpi-delivered-revenue" class="text-2xl font-black mt-1">Rs. 0</div>
-              <div class="text-[11px] text-purple-200 mt-1">Completed & delivered sales</div>
+          <!-- Status Filter Pills + Select All / Delete Selected -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b">
+            <div class="flex flex-wrap gap-2" id="order-status-filters">
+              <button onclick="filterOrderStatus('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900 text-white">All</button>
+              <button onclick="filterOrderStatus('Processing')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Processing</button>
+              <button onclick="filterOrderStatus('Dispatched')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Dispatched</button>
+              <button onclick="filterOrderStatus('Delivered')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Delivered</button>
             </div>
 
-            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <div class="text-[11px] uppercase tracking-wider text-emerald-700 font-bold">Delivered Orders</div>
-              <div id="kpi-delivered-orders" class="text-2xl font-black text-emerald-900 mt-1">0</div>
-              <div class="text-[11px] text-emerald-700 mt-1">Successfully delivered to customers</div>
-            </div>
-
-            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <div class="text-[11px] uppercase tracking-wider text-amber-700 font-bold">Total Products Sold</div>
-              <div id="kpi-units-sold" class="text-2xl font-black text-amber-900 mt-1">0</div>
-              <div class="text-[11px] text-amber-700 mt-1">Total units in delivered orders</div>
-            </div>
-
-            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-              <div class="text-[11px] uppercase tracking-wider text-blue-700 font-bold">In-Progress Orders</div>
-              <div id="kpi-pending-orders" class="text-2xl font-black text-blue-900 mt-1">0</div>
-              <div class="text-[11px] text-blue-700 mt-1">Processing + Dispatched (not in sale yet)</div>
-            </div>
-          </div>
-
-          <!-- Search + Product Sales Table -->
-          <div class="space-y-3 pt-2">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <h3 class="text-sm font-bold text-purple-950">Product-Wise Sale Table (Delivered Orders)</h3>
-              <input
-                type="text"
-                id="sales-search-input"
-                oninput="renderHomeSalesDashboard()"
-                placeholder="Search sold product by name..."
-                class="w-full sm:w-72 px-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
+            <div class="flex items-center gap-2">
+              <label class="inline-flex items-center gap-1.5 bg-gray-50 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold text-purple-950 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  id="select-all-orders-checkbox"
+                  onchange="toggleSelectAllOrders(this.checked)"
+                  class="w-4 h-4 accent-purple-900 rounded cursor-pointer"
+                >
+                <span>Select All</span>
+              </label>
+              <button
+                type="button"
+                id="delete-selected-orders-btn"
+                onclick="deleteSelectedOrders()"
+                disabled
+                class="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
               >
-            </div>
-
-            <div class="overflow-x-auto border border-purple-100 rounded-2xl">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="bg-purple-50/80 border-b border-purple-100 text-[11px] font-bold text-purple-950 uppercase">
-                    <th class="py-3 px-3">#</th>
-                    <th class="py-3 px-3">Product</th>
-                    <th class="py-3 px-3">Category</th>
-                    <th class="py-3 px-3">Unit Price</th>
-                    <th class="py-3 px-3">Delivered Orders</th>
-                    <th class="py-3 px-3">Qty Sold</th>
-                    <th class="py-3 px-3 text-right">Total Sale (PKR)</th>
-                  </tr>
-                </thead>
-                <tbody id="delivered-sales-table-body" class="divide-y divide-gray-100 text-xs">
-                  <tr><td colspan="7" class="p-6 text-center text-gray-400">Loading sales data...</td></tr>
-                </tbody>
-                <tfoot id="delivered-sales-table-foot" class="hidden bg-purple-950 text-white text-xs font-bold">
-                  <tr>
-                    <td colspan="5" class="py-3 px-3 text-right uppercase tracking-wider text-[11px] text-purple-200">Grand Total (Delivered):</td>
-                    <td id="foot-total-qty" class="py-3 px-3">0</td>
-                    <td id="foot-total-revenue" class="py-3 px-3 text-right text-amber-300">Rs. 0</td>
-                  </tr>
-                </tfoot>
-              </table>
+                <span>🗑️ Delete Selected</span>
+                <span id="selected-orders-count" class="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">0</span>
+              </button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- Products Section -->
-      <section id="section-products" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <h2 class="text-xl font-bold text-purple-950">Manage Products</h2>
-          <div class="relative w-full sm:w-80">
-            <input
-              type="text"
-              id="product-search-input"
-              oninput="handleProductSearch(this.value)"
-              placeholder="Search product by name, category, or price..."
-              class="w-full pl-9 pr-8 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
-            >
-            <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
-            <button
-              type="button"
-              id="clear-search-btn"
-              onclick="clearProductSearch()"
-              class="hidden absolute right-2.5 top-2 text-gray-400 hover:text-gray-700 text-xs font-bold"
-              title="Clear search"
-            >✕</button>
+          <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="col-span-full p-6 text-center text-gray-400 text-xs">Loading orders...</div>
           </div>
-        </div>
-        <div id="admin-category-filters" class="flex flex-wrap gap-2 pb-2 border-b"></div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b text-[11px] font-bold text-gray-400 uppercase">
-                <th class="pb-3 px-2">Images</th>
-                <th class="pb-3 px-2">Title</th>
-                <th class="pb-3 px-2">Category</th>
-                <th class="pb-3 px-2">Price (Now / Was)</th>
-                <th class="pb-3 px-2">Best Seller</th>
-                <th class="pb-3 px-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="products-list" class="divide-y divide-gray-50">
-              <tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Loading products...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+        </section>
 
-      <!-- Orders Section -->
-      <section id="section-orders" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div>
-            <h2 class="text-xl font-bold text-purple-950">Customer Orders</h2>
-            <p class="text-xs text-gray-400">Status <b>Delivered</b> karne par product automatically Home & Sales table mein add ho jayega.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <input
-              type="text"
-              id="order-search-input"
-              oninput="renderOrdersList()"
-              placeholder="Search order ID, name, email, phone..."
-              class="pl-3 pr-3 py-2 border border-purple-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-purple-50/40"
-            >
-            <button onclick="loadOrders()" class="bg-purple-900 hover:bg-purple-800 text-white px-3 py-2 rounded-xl text-xs font-bold">
-              🔄 Refresh
-            </button>
-          </div>
-        </div>
-
-        <!-- Status Filter Pills + Select All / Delete Selected -->
-        <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b">
-          <div class="flex flex-wrap gap-2" id="order-status-filters">
-            <button onclick="filterOrderStatus('All')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-900 text-white">All</button>
-            <button onclick="filterOrderStatus('Processing')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Processing</button>
-            <button onclick="filterOrderStatus('Dispatched')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Dispatched</button>
-            <button onclick="filterOrderStatus('Delivered')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-purple-900">Delivered</button>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <label class="inline-flex items-center gap-1.5 bg-gray-50 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold text-purple-950 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                id="select-all-orders-checkbox"
-                onchange="toggleSelectAllOrders(this.checked)"
-                class="w-4 h-4 accent-purple-900 rounded cursor-pointer"
-              >
-              <span>Select All</span>
-            </label>
-            <button
-              type="button"
-              id="delete-selected-orders-btn"
-              onclick="deleteSelectedOrders()"
-              disabled
-              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
-            >
-              <span>🗑️ Delete Selected</span>
-              <span id="selected-orders-count" class="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">0</span>
-            </button>
-          </div>
-        </div>
-
-        <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <div class="col-span-full p-6 text-center text-gray-400 text-xs">Loading orders...</div>
-        </div>
-      </section>
-
-      <!-- Collections Section -->
-      <section id="section-collections" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
-            <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 via Worker.</p>
-          </div>
-        </div>
-        <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </section>
-
-      <!-- Banners & Slider Settings Section -->
-      <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-5">
-        <div class="flex justify-between items-center">
-          <div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-xl font-bold text-purple-950">1. Top Slider Banners (1 to 4)</h2>
-              <span class="bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 450 px (12:5)</span>
+        <!-- Collections Section -->
+        <section id="section-collections" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-purple-950">Manage Collections & Background Pictures</h2>
+              <p class="text-xs text-gray-400">Uploads directly to Cloudflare R2 via Worker.</p>
             </div>
-            <p class="text-xs text-gray-400 mt-0.5">Upload 1 to 4 main slider banners and set auto-slide speed.</p>
           </div>
-        </div>
+          <div id="collections-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
 
-        <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
-          <div>
-            <h4 class="font-bold text-purple-950 text-xs">Banner Auto-Slide Interval (Seconds)</h4>
-            <p class="text-[10px] text-gray-500">Kitne seconds ke baad banner khud change ho (e.g. 3 or 4 seconds)</p>
-          </div>
-          <div class="flex items-center space-x-2">
-            <input type="number" id="banner-interval-input" value="3" min="1" max="15" class="w-16 p-2 border rounded-lg text-xs font-bold text-center">
-            <button onclick="saveBannerInterval()" class="bg-purple-900 text-white px-3 py-2 rounded-lg text-xs font-bold">Save Timer</button>
-          </div>
-        </div>
-
-        <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1"></div>
-
-        <!-- 2. Home Delivery Strip Banner -->
-        <div class="border-t pt-5 space-y-4">
-          <div class="flex items-center justify-between flex-wrap gap-2">
+        <!-- Banners & Slider Settings Section -->
+        <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-5">
+          <div class="flex justify-between items-center">
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="text-base font-bold text-purple-950">2. Home Delivery Strip Banner (Middle Banner)</h3>
-                <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 220 px (Wide Strip)</span>
+                <h2 class="text-xl font-bold text-purple-950">1. Top Slider Banners (1 to 4)</h2>
+                <span class="bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 450 px (12:5)</span>
               </div>
-              <p class="text-xs text-gray-400 mt-0.5">App mein Best Sellers aur Explore More ke darmiyan show hone wala banner.</p>
+              <p class="text-xs text-gray-400 mt-0.5">Upload 1 to 4 main slider banners and set auto-slide speed.</p>
             </div>
-            <label class="inline-flex items-center space-x-2 cursor-pointer text-xs font-bold text-purple-950">
-              <input type="checkbox" id="delivery-banner-enabled" checked onchange="updateDeliveryPreview()" class="w-4 h-4 accent-purple-900">
-              <span>Active</span>
-            </label>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-            <div class="bg-gray-50 p-4 rounded-2xl border">
-              <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">App Preview</p>
-              <div id="delivery-banner-preview" class="w-full rounded-2xl overflow-hidden shadow">
-                <div id="delivery-banner-image-preview" class="hidden w-full h-20">
-                  <img id="preview-delivery-img" src="" alt="Delivery Banner" class="w-full h-full object-cover">
-                </div>
-                <div id="delivery-banner-text-preview" class="w-full px-4 py-3 text-white flex items-center space-x-3" style="background: linear-gradient(90deg, #5b21b6 0%, #312e81 100%);">
-                  <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
-                    🚚
-                  </div>
-                  <div class="min-w-0">
-                    <div id="preview-delivery-title" class="text-amber-300 font-bold text-xs tracking-wide truncate">ALL PAKISTAN FREE DELIVERY</div>
-                    <div id="preview-delivery-subtitle" class="text-white/80 text-[11px] truncate">Order now & get fast delivery at your doorstep.</div>
-                  </div>
-                </div>
-              </div>
+          <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
+            <div>
+              <h4 class="font-bold text-purple-950 text-xs">Banner Auto-Slide Interval (Seconds)</h4>
+              <p class="text-[10px] text-gray-500">Kitne seconds ke baad banner khud change ho (e.g. 3 or 4 seconds)</p>
             </div>
+            <div class="flex items-center space-x-2">
+              <input type="number" id="banner-interval-input" value="3" min="1" max="15" class="w-16 p-2 border rounded-lg text-xs font-bold text-center">
+              <button onclick="saveBannerInterval()" class="bg-purple-900 text-white px-3 py-2 rounded-lg text-xs font-bold">Save Timer</button>
+            </div>
+          </div>
 
-            <div class="space-y-3 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
+          <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1"></div>
+
+          <!-- 2. Home Delivery Strip Banner -->
+          <div class="border-t pt-5 space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-semibold">Upload Delivery Banner Picture (1080 × 220 px)</label>
-                  <button type="button" id="remove-delivery-img-btn" onclick="removeDeliveryBannerImage()" class="hidden text-[11px] text-red-600 font-bold hover:underline">Remove Pic ✕</button>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-base font-bold text-purple-950">2. Home Delivery Strip Banner (Middle Banner)</h3>
+                  <span class="bg-purple-100 text-purple-900 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Recommended Size: 1080 × 220 px (Wide Strip)</span>
                 </div>
-                <input
-                  type="file"
-                  id="delivery-banner-image-input"
-                  accept="image/*"
-                  onchange="previewDeliveryImageFile(event)"
-                  class="w-full p-2 border rounded-lg text-xs bg-white"
-                >
-                <p class="text-[10px] text-gray-500 mt-1">Agar picture upload karenge toh app mein yeh picture show hogi; remove karne par default delivery banner dikhega.</p>
+                <p class="text-xs text-gray-400 mt-0.5">App mein Best Sellers aur Explore More ke darmiyan show hone wala banner.</p>
               </div>
-              <div class="flex justify-end">
-                <button type="button" onclick="saveDeliveryBanner()" id="save-delivery-banner-btn" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-xs font-bold">
-                  Save Delivery Banner
-                </button>
+              <label class="inline-flex items-center space-x-2 cursor-pointer text-xs font-bold text-purple-950">
+                <input type="checkbox" id="delivery-banner-enabled" checked onchange="updateDeliveryPreview()" class="w-4 h-4 accent-purple-900">
+                <span>Active</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+              <div class="bg-gray-50 p-4 rounded-2xl border">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">App Preview</p>
+                <div id="delivery-banner-preview" class="w-full rounded-2xl overflow-hidden shadow">
+                  <div id="delivery-banner-image-preview" class="hidden w-full h-20">
+                    <img id="preview-delivery-img" src="" alt="Delivery Banner" class="w-full h-full object-cover">
+                  </div>
+                  <div id="delivery-banner-text-preview" class="w-full px-4 py-3 text-white flex items-center space-x-3" style="background: linear-gradient(90deg, #5b21b6 0%, #312e81 100%);">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                      🚚
+                    </div>
+                    <div class="min-w-0">
+                      <div id="preview-delivery-title" class="text-amber-300 font-bold text-xs tracking-wide truncate">ALL PAKISTAN FREE DELIVERY</div>
+                      <div id="preview-delivery-subtitle" class="text-white/80 text-[11px] truncate">Order now & get fast delivery at your doorstep.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-3 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-semibold">Upload Delivery Banner Picture (1080 × 220 px)</label>
+                    <button type="button" id="remove-delivery-img-btn" onclick="removeDeliveryBannerImage()" class="hidden text-[11px] text-red-600 font-bold hover:underline">Remove Pic ✕</button>
+                  </div>
+                  <input
+                    type="file"
+                    id="delivery-banner-image-input"
+                    accept="image/*"
+                    onchange="previewDeliveryImageFile(event)"
+                    class="w-full p-2 border rounded-lg text-xs bg-white"
+                  >
+                  <p class="text-[10px] text-gray-500 mt-1">Agar picture upload karenge toh app mein yeh picture show hogi; remove karne par default delivery banner dikhega.</p>
+                </div>
+                <div class="flex justify-end">
+                  <button type="button" onclick="saveDeliveryBanner()" id="save-delivery-banner-btn" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-xs font-bold">
+                    Save Delivery Banner
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    </main>
-  </div>
+        </section>
+      </main>
+    </div>
 
-  <!-- Add/Edit Product Modal -->
-  <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
-      <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
-      <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
-        <input type="hidden" id="product-id">
-        <div>
-          <label class="text-xs font-semibold block mb-1">Product Images (Upload new or remove existing)</label>
-          <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
+    <!-- Add/Edit Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+        <h3 id="modal-title" class="text-xl font-bold text-purple-950 mb-4">Add Product</h3>
+        <form id="product-form-element" onsubmit="saveProduct(event)" class="space-y-3">
+          <input type="hidden" id="product-id">
+          <div>
+            <label class="text-xs font-semibold block mb-1">Product Images (Upload new or remove existing)</label>
+            <input type="file" id="product-images" accept="image/*" multiple class="w-full border p-2 rounded-lg text-xs">
+            
+            <div id="existing-images-preview" class="flex flex-wrap gap-2 mt-2"></div>
+            <p class="text-[10px] text-gray-400 mt-1">Aap kisi bhi purani pic par 'X' click karke remove kar sakte hain.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs font-semibold">Title</label>
+              <input type="text" id="title" required class="w-full p-2 border rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Category</label>
+              <select id="category-select" class="w-full p-2 border rounded-lg text-xs"></select>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-xs font-semibold">Now Price (PKR)</label>
+              <input type="number" id="price" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g 2000">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Was Price (Old)</label>
+              <input type="number" id="old-price" class="w-full p-2 border rounded-lg text-xs" placeholder="e.g 2500">
+            </div>
+            <div>
+              <label class="text-xs font-semibold">Rating</label>
+              <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-xs">
+            </div>
+          </div>
           
-          <div id="existing-images-preview" class="flex flex-wrap gap-2 mt-2"></div>
-          <p class="text-[10px] text-gray-400 mt-1">Aap kisi bhi purani pic par 'X' click karke remove kar sakte hain.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-xs font-semibold">Title</label>
-            <input type="text" id="title" required class="w-full p-2 border rounded-lg text-xs">
+            <label class="text-xs font-semibold">Product Description / Details</label>
+            <textarea id="product-description" rows="3" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
           </div>
           <div>
-            <label class="text-xs font-semibold">Category</label>
-            <select id="category-select" class="w-full p-2 border rounded-lg text-xs"></select>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="text-xs font-semibold">Now Price (PKR)</label>
-            <input type="number" id="price" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g 2000">
+            <label class="text-xs font-semibold">Specification</label>
+            <textarea id="product-specification" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• Bluetooth Version: 5.3"></textarea>
           </div>
           <div>
-            <label class="text-xs font-semibold">Was Price (Old)</label>
-            <input type="number" id="old-price" class="w-full p-2 border rounded-lg text-xs" placeholder="e.g 2500">
+            <label class="text-xs font-semibold">Warranty Details</label>
+            <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Warranty"></textarea>
           </div>
           <div>
-            <label class="text-xs font-semibold">Rating</label>
-            <input type="text" id="rating" value="4.8" class="w-full p-2 border rounded-lg text-xs">
+            <label class="text-xs font-semibold">What's in the Box</label>
+            <textarea id="product-box" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1x Main Device"></textarea>
           </div>
-        </div>
-        
-        <div>
-          <label class="text-xs font-semibold">Product Description / Details</label>
-          <textarea id="product-description" rows="3" class="w-full p-2 border rounded-lg text-xs" placeholder="Product ke features yahan likhein..."></textarea>
-        </div>
-        <div>
-          <label class="text-xs font-semibold">Specification</label>
-          <textarea id="product-specification" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• Bluetooth Version: 5.3"></textarea>
-        </div>
-        <div>
-          <label class="text-xs font-semibold">Warranty Details</label>
-          <textarea id="product-warranty" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1 Year Warranty"></textarea>
-        </div>
-        <div>
-          <label class="text-xs font-semibold">What's in the Box</label>
-          <textarea id="product-box" rows="2" class="w-full p-2 border rounded-lg text-xs" placeholder="• 1x Main Device"></textarea>
-        </div>
 
-        <div class="flex items-center space-x-2 pt-2">
-          <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
-          <label class="text-xs font-bold text-purple-950">Show in Best Sellers 🌟</label>
-        </div>
-        <div class="flex justify-end space-x-2 pt-4">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs bg-gray-200 rounded-lg">Cancel</button>
-          <button type="submit" id="save-product-btn" class="px-4 py-2 text-xs bg-purple-900 text-white font-bold rounded-lg">Save Product</button>
-        </div>
-      </form>
+          <div class="flex items-center space-x-2 pt-2">
+            <input type="checkbox" id="is-best-seller" class="w-4 h-4 accent-purple-900">
+            <label class="text-xs font-bold text-purple-950">Show in Best Sellers 🌟</label>
+          </div>
+          <div class="flex justify-end space-x-2 pt-4">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs bg-gray-200 rounded-lg">Cancel</button>
+            <button type="submit" id="save-product-btn" class="px-4 py-2 text-xs bg-purple-900 text-white font-bold rounded-lg">Save Product</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
 
-  <!-- Add Collection Modal -->
-  <div id="category-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-      <h3 class="text-lg font-bold text-purple-950 mb-3">Add Collection</h3>
-      <form onsubmit="saveNewCategory(event)" class="space-y-3">
-        <div>
-          <label class="text-xs font-semibold block mb-1">Collection Name</label>
-          <input type="text" id="new-category-name" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g Earbuds">
-        </div>
-        <div>
-          <label class="text-xs font-semibold block mb-1">Background Picture</label>
-          <input type="file" id="new-category-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeCategoryModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 text-xs bg-purple-900 text-white font-semibold rounded-lg">Save Collection</button>
-        </div>
-      </form>
+    <!-- Add Collection Modal -->
+    <div id="category-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <h3 class="text-lg font-bold text-purple-950 mb-3">Add Collection</h3>
+        <form onsubmit="saveNewCategory(event)" class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold block mb-1">Collection Name</label>
+            <input type="text" id="new-category-name" required class="w-full p-2 border rounded-lg text-xs" placeholder="e.g Earbuds">
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1">Background Picture</label>
+            <input type="file" id="new-category-image" accept="image/*" class="w-full border p-2 rounded-lg text-xs">
+          </div>
+          <div class="flex justify-end space-x-2 pt-2">
+            <button type="button" onclick="closeCategoryModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
+            <button type="submit" class="px-4 py-1.5 text-xs bg-purple-900 text-white font-semibold rounded-lg">Save Collection</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
 
-  <!-- Add Banner Modal -->
-  <div id="banner-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-      <h3 class="text-lg font-bold text-purple-950 mb-1">Add Top Slider Banner (1 to 4)</h3>
-      <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-semibold mb-3">Recommended Size: 1080 × 450 px (12:5)</p>
-      <form onsubmit="saveNewBanner(event)" class="space-y-3">
-        <div>
-          <label class="text-xs font-semibold block mb-1">Select Banner Image</label>
-          <input type="file" id="new-banner-image" accept="image/*" required class="w-full border p-2 rounded-lg text-xs">
-        </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeBannerModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
-          <button type="submit" id="save-banner-btn" class="px-4 py-1.5 text-xs bg-amber-600 text-white font-semibold rounded-lg">Upload Banner</button>
-        </div>
-      </form>
+    <!-- Add Banner Modal -->
+    <div id="banner-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <h3 class="text-lg font-bold text-purple-950 mb-1">Add Top Slider Banner (1 to 4)</h3>
+        <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-semibold mb-3">Recommended Size: 1080 × 450 px (12:5)</p>
+        <form onsubmit="saveNewBanner(event)" class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold block mb-1">Select Banner Image</label>
+            <input type="file" id="new-banner-image" accept="image/*" required class="w-full border p-2 rounded-lg text-xs">
+          </div>
+          <div class="flex justify-end space-x-2 pt-2">
+            <button type="button" onclick="closeBannerModal()" class="px-3 py-1.5 text-xs bg-gray-200 rounded-lg">Cancel</button>
+            <button type="submit" id="save-banner-btn" class="px-4 py-1.5 text-xs bg-amber-600 text-white font-semibold rounded-lg">Upload Banner</button>
+          </div>
+        </form>
+      </div>
     </div>
+
   </div>
 
   <script>
@@ -462,7 +525,12 @@
     const SUPABASE_KEY = 'sb_publishable_B_0j8EGmc1a76LhW-GfjPw_3ff1KmK7';
     const WORKER_UPLOAD_URL = 'https://wandering-sea-3029.growmore-shop786.workers.dev';
 
+    // Apna password yahan set karein:
+    const ADMIN_PANEL_PASSWORD = 'GrowMore@2026';
+    const ADMIN_SESSION_KEY = 'gm_admin_unlocked_v1';
+
     let dbClient;
+    let isPanelInitialized = false;
     let allProducts = [];
     let allOrders = [];
     let allShippingAddresses = [];
@@ -493,7 +561,70 @@
     };
     let deliveryBannerPreviewTempUrl = '';
 
+    function togglePasswordVisibility() {
+      const input = document.getElementById('admin-password-input');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function showUnlockedPanel() {
+      document.getElementById('admin-lock-screen').classList.add('hidden');
+      document.getElementById('admin-main-app').classList.remove('hidden');
+      document.getElementById('admin-lock-error').classList.add('hidden');
+      initializeAdminDashboard();
+    }
+
+    function lockAdminPanel() {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      document.getElementById('admin-main-app').classList.add('hidden');
+      document.getElementById('admin-lock-screen').classList.remove('hidden');
+      const pwdInput = document.getElementById('admin-password-input');
+      if (pwdInput) {
+        pwdInput.value = '';
+        pwdInput.type = 'password';
+        pwdInput.focus();
+      }
+    }
+
+    function unlockAdminPanel(event) {
+      event.preventDefault();
+      const input = document.getElementById('admin-password-input');
+      const errorEl = document.getElementById('admin-lock-error');
+      const rememberCb = document.getElementById('remember-admin-session');
+      const entered = (input?.value || '').trim();
+
+      if (entered === ADMIN_PANEL_PASSWORD) {
+        errorEl.classList.add('hidden');
+        if (rememberCb && rememberCb.checked) {
+          localStorage.setItem(ADMIN_SESSION_KEY, '1');
+        } else {
+          sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+        }
+        input.value = '';
+        showUnlockedPanel();
+      } else {
+        errorEl.classList.remove('hidden');
+        input.focus();
+        input.select();
+      }
+    }
+
     window.onload = async () => {
+      const alreadyUnlocked =
+        sessionStorage.getItem(ADMIN_SESSION_KEY) === '1' ||
+        localStorage.getItem(ADMIN_SESSION_KEY) === '1';
+
+      if (alreadyUnlocked) {
+        showUnlockedPanel();
+      } else {
+        document.getElementById('admin-password-input')?.focus();
+      }
+    };
+
+    async function initializeAdminDashboard() {
+      if (isPanelInitialized) return;
+      isPanelInitialized = true;
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       updateHeaderActionsForTab('home');
       await loadCollectionsFromSupabase();
@@ -501,7 +632,7 @@
       await loadDeliveryBannerFromSupabase();
       await loadProducts();
       await loadOrders();
-    };
+    }
 
     function updateHeaderActionsForTab(tab) {
       document.getElementById('header-add-product-btn').classList.toggle('hidden', tab !== 'products');
