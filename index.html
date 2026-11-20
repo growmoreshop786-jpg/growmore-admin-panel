@@ -106,11 +106,11 @@
       </section>
 
       <!-- Banners & Slider Settings Section -->
-      <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+      <section id="section-banners" class="hidden bg-white rounded-2xl shadow-sm border p-6 space-y-5">
         <div class="flex justify-between items-center">
           <div>
             <h2 class="text-xl font-bold text-purple-950">Manage Banners & Auto-Slide Speed</h2>
-            <p class="text-xs text-gray-400">Upload 1 to 4 banners and set the slide timer duration.</p>
+            <p class="text-xs text-gray-400">Upload 1 to 4 banners, set slide timer, and manage delivery banner.</p>
           </div>
           <button onclick="openAddBannerModal()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs">
             + Add Banner
@@ -128,7 +128,66 @@
           </div>
         </div>
 
-        <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"></div>
+        <div id="banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1"></div>
+
+        <!-- Home Delivery Strip Banner Preview & Editor -->
+        <div class="border-t pt-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-purple-950">Home Delivery Strip Banner</h3>
+              <p class="text-xs text-gray-400">App mein Best Sellers aur Explore More ke darmiyan show hone wala banner.</p>
+            </div>
+            <label class="inline-flex items-center space-x-2 cursor-pointer text-xs font-bold text-purple-950">
+              <input type="checkbox" id="delivery-banner-enabled" checked onchange="updateDeliveryPreview()" class="w-4 h-4 accent-purple-900">
+              <span>Active</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+            <!-- Live Visual Preview -->
+            <div class="bg-gray-50 p-4 rounded-2xl border">
+              <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">App Preview</p>
+              <div id="delivery-banner-preview" class="w-full rounded-2xl px-4 py-3 text-white flex items-center space-x-3 shadow" style="background: linear-gradient(90deg, #5b21b6 0%, #312e81 100%);">
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                  🚚
+                </div>
+                <div class="min-w-0">
+                  <div id="preview-delivery-title" class="text-amber-300 font-bold text-xs tracking-wide truncate">ALL PAKISTAN FREE DELIVERY</div>
+                  <div id="preview-delivery-subtitle" class="text-white/80 text-[11px] truncate">Order now & get fast delivery at your doorstep.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Edit Controls -->
+            <div class="space-y-3 bg-purple-50/40 p-4 rounded-2xl border border-purple-100">
+              <div>
+                <label class="text-xs font-semibold block mb-1">Banner Heading</label>
+                <input
+                  type="text"
+                  id="delivery-banner-title"
+                  value="ALL PAKISTAN FREE DELIVERY"
+                  oninput="updateDeliveryPreview()"
+                  class="w-full p-2 border rounded-lg text-xs font-bold bg-white"
+                >
+              </div>
+              <div>
+                <label class="text-xs font-semibold block mb-1">Banner Subtitle</label>
+                <input
+                  type="text"
+                  id="delivery-banner-subtitle"
+                  value="Order now & get fast delivery at your doorstep."
+                  oninput="updateDeliveryPreview()"
+                  class="w-full p-2 border rounded-lg text-xs bg-white"
+                >
+              </div>
+              <div class="flex justify-end">
+                <button type="button" onclick="saveDeliveryBanner()" id="save-delivery-banner-btn" class="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-xs font-bold">
+                  Save Delivery Banner
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -262,11 +321,17 @@
     ];
     let bannersList = [];
     let bannerInterval = 3;
+    let deliveryBanner = {
+      title: 'ALL PAKISTAN FREE DELIVERY',
+      subtitle: 'Order now & get fast delivery at your doorstep.',
+      enabled: true
+    };
 
     window.onload = async () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       await loadCollectionsFromSupabase();
       await loadBannersFromSupabase();
+      await loadDeliveryBannerFromSupabase();
       await loadProducts();
     };
 
@@ -315,6 +380,64 @@
       renderBannersAdminGrid();
     }
 
+    async function loadDeliveryBannerFromSupabase() {
+      try {
+        const { data } = await dbClient.from('settings').select('value').eq('key', 'delivery_banner').maybeSingle();
+        if (data && data.value) {
+          const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          if (parsed && typeof parsed === 'object') {
+            deliveryBanner = {
+              title: parsed.title ?? 'ALL PAKISTAN FREE DELIVERY',
+              subtitle: parsed.subtitle ?? 'Order now & get fast delivery at your doorstep.',
+              enabled: parsed.enabled !== false
+            };
+          }
+        }
+      } catch (e) {}
+      document.getElementById('delivery-banner-title').value = deliveryBanner.title;
+      document.getElementById('delivery-banner-subtitle').value = deliveryBanner.subtitle;
+      document.getElementById('delivery-banner-enabled').checked = deliveryBanner.enabled;
+      updateDeliveryPreview();
+    }
+
+    function updateDeliveryPreview() {
+      const title = document.getElementById('delivery-banner-title').value.trim() || 'ALL PAKISTAN FREE DELIVERY';
+      const subtitle = document.getElementById('delivery-banner-subtitle').value.trim() || 'Order now & get fast delivery at your doorstep.';
+      const enabled = document.getElementById('delivery-banner-enabled').checked;
+
+      document.getElementById('preview-delivery-title').innerText = title;
+      document.getElementById('preview-delivery-subtitle').innerText = subtitle;
+
+      const previewEl = document.getElementById('delivery-banner-preview');
+      previewEl.classList.toggle('opacity-40', !enabled);
+    }
+
+    async function saveDeliveryBanner() {
+      const btn = document.getElementById('save-delivery-banner-btn');
+      btn.innerText = 'Saving... ⏳';
+      btn.disabled = true;
+
+      deliveryBanner = {
+        title: document.getElementById('delivery-banner-title').value.trim() || 'ALL PAKISTAN FREE DELIVERY',
+        subtitle: document.getElementById('delivery-banner-subtitle').value.trim() || 'Order now & get fast delivery at your doorstep.',
+        enabled: document.getElementById('delivery-banner-enabled').checked
+      };
+
+      try {
+        const { error } = await dbClient.from('settings').upsert({
+          key: 'delivery_banner',
+          value: JSON.stringify(deliveryBanner)
+        });
+        if (error) throw error;
+        alert('Delivery Banner Saved Successfully! ✅');
+      } catch (e) {
+        alert('Error saving delivery banner: ' + e.message);
+      } finally {
+        btn.innerText = 'Save Delivery Banner';
+        btn.disabled = false;
+      }
+    }
+
     async function saveBannersToSupabase() {
       const payload = { images: bannersList, interval: parseInt(bannerInterval) || 3 };
       await dbClient.from('settings').upsert({ key: 'banners', value: JSON.stringify(payload) });
@@ -356,7 +479,7 @@
     function renderBannersAdminGrid() {
       const grid = document.getElementById('banners-grid');
       if (!bannersList.length) {
-        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 text-xs border rounded-xl">No banners added yet. Upload up to 4 banners.</div>`;
+        grid.innerHTML = `<div class="col-span-2 p-6 text-center text-gray-400 text-xs border rounded-xl">No slider banners added yet. Upload up to 4 banners.</div>`;
         return;
       }
       grid.innerHTML = bannersList.map((b, index) => `
@@ -365,7 +488,7 @@
             <img src="${b.image || b}" class="w-full h-full object-cover">
           </div>
           <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-purple-950 text-xs">Banner #${index + 1}</h4>
+            <h4 class="font-bold text-purple-950 text-xs">Slider Banner #${index + 1}</h4>
             <span class="text-[10px] text-gray-400 truncate block">Cloudflare R2 Linked</span>
           </div>
           <button onclick="deleteBanner(${index})" class="text-red-500 font-bold text-xs p-2">🗑️</button>
